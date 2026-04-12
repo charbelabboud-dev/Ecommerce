@@ -1,0 +1,134 @@
+
+-- Table 1: AdminUsers
+CREATE TABLE AdminUsers (
+    AdminUser_Id INT PRIMARY KEY IDENTITY(1,1),
+    AdminUser_Username NVARCHAR(100) NOT NULL UNIQUE,
+    AdminUser_PasswordHash NVARCHAR(255) NOT NULL,
+    AdminUser_Email NVARCHAR(200) NOT NULL,
+    AdminUser_StoreName NVARCHAR(200) NOT NULL,
+    AdminUser_StorePhone NVARCHAR(50) NOT NULL,
+    AdminUser_StoreAddress NVARCHAR(500) NULL,
+    AdminUser_StoreLogo NVARCHAR(500) NULL,
+    AdminUser_IsActive BIT DEFAULT 1,
+    AdminUser_CreatedAt DATETIME2 DEFAULT GETDATE(),
+    AdminUser_UpdatedAt DATETIME2 DEFAULT GETDATE()
+);
+GO
+
+
+CREATE TABLE Products (
+    Product_Id INT PRIMARY KEY IDENTITY(1,1),
+    Product_AdminUserId INT NOT NULL,
+    Product_Name NVARCHAR(255) NOT NULL,
+    Product_Description NVARCHAR(MAX) NULL,
+    Product_ShortDescription NVARCHAR(500) NULL,
+    Product_PriceUSD DECIMAL(18,2) NULL,
+    Product_PriceLBP DECIMAL(18,2) NULL,
+    Product_CompareAtPriceUSD DECIMAL(18,2) NULL,
+    Product_CompareAtPriceLBP DECIMAL(18,2) NULL,
+    Product_Stock INT DEFAULT 0,
+    Product_SKU NVARCHAR(100) NULL,
+    Product_IsActive BIT DEFAULT 1,
+    Product_IsFeatured BIT DEFAULT 0,
+    Product_CreatedAt DATETIME2 DEFAULT GETDATE(),
+    Product_UpdatedAt DATETIME2 DEFAULT GETDATE(),
+    
+    FOREIGN KEY (Product_AdminUserId) REFERENCES AdminUsers(AdminUser_Id),
+
+    CONSTRAINT CHK_Product_HasPrice CHECK (
+        Product_PriceUSD IS NOT NULL OR Product_PriceLBP IS NOT NULL
+    )
+);
+GO
+
+-- Table 3: ProductImages
+CREATE TABLE ProductImages (
+    ProductImage_Id INT PRIMARY KEY IDENTITY(1,1),
+    ProductImage_ProductId INT NOT NULL,
+    ProductImage_ImageUrl NVARCHAR(500) NOT NULL,
+    ProductImage_IsMain BIT DEFAULT 0,
+    ProductImage_DisplayOrder INT DEFAULT 0,
+    ProductImage_CreatedAt DATETIME2 DEFAULT GETDATE(),
+    
+    FOREIGN KEY (ProductImage_ProductId) REFERENCES Products(Product_Id) ON DELETE CASCADE
+);
+GO
+
+
+CREATE TABLE Orders (
+    Order_Id INT PRIMARY KEY IDENTITY(1,1),
+    Order_AdminUserId INT NOT NULL,
+    Order_Number NVARCHAR(50) NOT NULL UNIQUE,
+    Order_CustomerName NVARCHAR(200) NOT NULL,
+    Order_CustomerPhone NVARCHAR(50) NOT NULL,
+    Order_CustomerEmail NVARCHAR(200) NULL,
+    Order_CustomerAddress NVARCHAR(500) NOT NULL,
+    Order_SubtotalUSD DECIMAL(18,2) NULL,
+    Order_SubtotalLBP DECIMAL(18,2) NULL,
+    Order_ShippingFeeUSD DECIMAL(18,2) NULL DEFAULT 0,
+    Order_ShippingFeeLBP DECIMAL(18,2) NULL DEFAULT 0,
+    Order_TotalAmountUSD DECIMAL(18,2) NULL,
+    Order_TotalAmountLBP DECIMAL(18,2) NULL,
+    Order_Currency NVARCHAR(3) NOT NULL,
+    Order_Status NVARCHAR(50) DEFAULT 'Pending',
+    Order_PaymentMethod NVARCHAR(50) DEFAULT 'COD',
+    Order_PaymentStatus NVARCHAR(50) DEFAULT 'Unpaid',
+    Order_Notes NVARCHAR(500) NULL,
+    Order_AdminNotes NVARCHAR(500) NULL,
+    Order_CreatedAt DATETIME2 DEFAULT GETDATE(),
+    Order_UpdatedAt DATETIME2 DEFAULT GETDATE(),
+    
+    FOREIGN KEY (Order_AdminUserId) REFERENCES AdminUsers(AdminUser_Id),
+    
+    CONSTRAINT CHK_Order_HasAmount CHECK (
+        Order_TotalAmountUSD IS NOT NULL OR Order_TotalAmountLBP IS NOT NULL
+    ),
+    
+    CONSTRAINT CHK_Orders_Status CHECK (
+        Order_Status IN ('Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled')
+    ),
+    
+    CONSTRAINT CHK_Orders_Currency CHECK (
+        Order_Currency IN ('USD', 'LBP')
+    )
+);
+GO
+
+
+CREATE TABLE OrderItems (
+    OrderItem_Id INT PRIMARY KEY IDENTITY(1,1),
+    OrderItem_OrderId INT NOT NULL,
+    OrderItem_ProductId INT NOT NULL,
+    OrderItem_ProductName NVARCHAR(255) NOT NULL,
+    OrderItem_ProductSKU NVARCHAR(100) NULL,
+    OrderItem_Quantity INT NOT NULL,
+    OrderItem_UnitPriceUSD DECIMAL(18,2) NULL,
+    OrderItem_UnitPriceLBP DECIMAL(18,2) NULL,
+    OrderItem_TotalPriceUSD DECIMAL(18,2) NULL,
+    OrderItem_TotalPriceLBP DECIMAL(18,2) NULL,
+    
+    FOREIGN KEY (OrderItem_OrderId) REFERENCES Orders(Order_Id) ON DELETE CASCADE,
+    FOREIGN KEY (OrderItem_ProductId) REFERENCES Products(Product_Id),
+    
+    CONSTRAINT CHK_OrderItem_HasPrice CHECK (
+        OrderItem_UnitPriceUSD IS NOT NULL OR OrderItem_UnitPriceLBP IS NOT NULL
+    )
+);
+GO
+
+-- Insert default admin (password will be hashed with BCrypt in C#)
+INSERT INTO AdminUsers (
+    AdminUser_Username, 
+    AdminUser_PasswordHash, 
+    AdminUser_Email, 
+    AdminUser_StoreName, 
+    AdminUser_StorePhone
+)
+VALUES (
+    'admin', 
+    'PLACEHOLDER_HASH_REPLACE_ME', 
+    'admin@mystore.com', 
+    'My Store', 
+    '+961 00 000 000'
+);
+GO
