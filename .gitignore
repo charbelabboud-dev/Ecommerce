@@ -1,0 +1,16 @@
+# Build outputs
+EcommerceApi/bin/
+EcommerceApi/obj/
+EcommerceApi/Migrations/
+
+# Frontend (will be in separate repo)
+ecommerce-admin/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+
+# OS files
+.DS_Store
+Thumbs.db
