@@ -1,16 +1,14 @@
-# Build outputs
+# Frontend
+ecommerce-admin/node_modules/
+ecommerce-admin/.env
+ecommerce-admin/build/
+ecommerce-admin/.env.local
+
+# Backend
 EcommerceApi/bin/
 EcommerceApi/obj/
 EcommerceApi/Migrations/
 
-# Frontend (will be in separate repo)
-ecommerce-admin/
-
-# Visual Studio
-.vs/
-*.suo
-*.user
-
-# OS files
+# OS
 .DS_Store
 Thumbs.db
