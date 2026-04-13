@@ -47,7 +47,7 @@ function Dashboard({ admin, onLogout }) {
   };
 
   const goToOrders = () => {
-    alert('Orders page coming soon!');
+    navigate('/orders');
   };
 
   return (

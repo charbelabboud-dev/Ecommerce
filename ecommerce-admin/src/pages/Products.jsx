@@ -192,12 +192,12 @@ function Products() {
                     {products.length === 0 
                       ? 'No products found. Click "Add Product" to create one.' 
                       : `No ${filter !== 'all' ? filter : ''} products match your search.`}
-                    </td>
+                  </td>
                 </tr>
               ) : (
                 filteredProducts.map((product) => (
                   <tr key={product.product_Id}>
-                    <td className="product-image-cell">
+                    <td className="product-image-cell" data-label="Image">
                       {product.productImages && product.productImages.length > 0 ? (
                         <img 
                           src={`http://localhost:5147${product.productImages[0].productImage_ImageUrl}`} 
@@ -212,21 +212,25 @@ function Products() {
                         <div className="product-image-placeholder">No Image</div>
                       )}
                     </td>
-                    <td className="product-name-cell">{product.product_Name}</td>
-                    <td className="product-price-cell">
+                    <td className="product-name-cell" data-label="Name">
+                      {product.product_Name}
+                    </td>
+                    <td className="product-price-cell" data-label="Price">
                       {product.product_PriceUSD 
                         ? `$${product.product_PriceUSD.toFixed(2)}` 
                         : product.product_PriceLBP 
                           ? `${product.product_PriceLBP.toFixed(2)} LBP`
                           : 'N/A'}
                     </td>
-                    <td>{product.product_Stock}</td>
-                    <td>
+                    <td className="product-stock-cell" data-label="Stock">
+                      {product.product_Stock}
+                    </td>
+                    <td className="product-status-cell" data-label="Status">
                       <span className={product.product_IsActive ? 'status-active' : 'status-inactive'}>
                         {product.product_IsActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="product-actions">
+                    <td className="product-actions-cell" data-label="Actions">
                       <button className="edit-btn" onClick={() => handleEdit(product)}>Edit</button>
                       <button className="delete-btn" onClick={() => handleDelete(product.product_Id)}>Delete</button>
                     </td>

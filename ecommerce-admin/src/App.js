@@ -4,6 +4,7 @@ import { ToastProvider } from './contexts/ToastContexts';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
+import Orders from './pages/Orders';
 import './App.css';
 
 function App() {
@@ -58,7 +59,11 @@ function App() {
               <Products />
             </ProtectedRoute>
           } />
-          
+          <Route path="/orders" element={
+            <ProtectedRoute>
+              <Orders />
+            </ProtectedRoute>
+          } />
           <Route path="*" element={
             isAuthenticated ? <Navigate to="/" /> : <Navigate to="/login" />
           } />
