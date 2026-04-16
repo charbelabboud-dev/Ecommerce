@@ -1,15 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import API from '../services/api';
-import './Dashboard.css';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API from '../services/api';
+import { useToast } from '../contexts/ToastContexts';
+import './Dashboard.css';
+import LowStockAlert from '../components/LowStockAlert';
 
 function Dashboard({ admin, onLogout }) {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [stats, setStats] = useState({
     products: 0,
     orders: 0,
     pendingOrders: 0,
   });
+  
+  // Track if error already shown to prevent duplicate toasts
+  const errorShown = useRef(false);
 
   useEffect(() => {
     fetchStats();
@@ -31,8 +37,13 @@ function Dashboard({ admin, onLogout }) {
         orders: ordersRes.data.length,
         pendingOrders: pendingOrders,
       });
+      errorShown.current = false;
     } catch (error) {
       console.error('Error fetching stats:', error);
+      if (!errorShown.current) {
+        addToast('Failed to load dashboard stats. Backend may be offline.', 'error');
+        errorShown.current = true;
+      }
     }
   };
 
@@ -43,11 +54,15 @@ function Dashboard({ admin, onLogout }) {
   };
 
   const goToProducts = () => {
-      navigate('/products');
+    navigate('/products');
   };
 
   const goToOrders = () => {
     navigate('/orders');
+  };
+
+  const goToCategories = () => {
+    navigate('/categories');
   };
 
   return (
@@ -74,12 +89,18 @@ function Dashboard({ admin, onLogout }) {
         </div>
       </div>
       
+      {/* Low Stock Alert - OUTSIDE the stats grid */}
+      <LowStockAlert />
+      
       <div className="dashboard-nav">
         <button onClick={goToProducts} className="nav-button">
           📦 Manage Products
         </button>
         <button onClick={goToOrders} className="nav-button">
           📋 View Orders
+        </button>
+        <button onClick={goToCategories} className="nav-button">
+          🏷️ Manage Categories
         </button>
       </div>
     </div>

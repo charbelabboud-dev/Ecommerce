@@ -155,16 +155,14 @@
   font-size: 16px;
 }
 
-/* Table Container - No horizontal scroll on mobile */
+/* Table Container */
 .products-table-container {
   background: white;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
-  overflow-x: visible;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-/* Table Styles - Card layout on mobile */
 .products-table {
   width: 100%;
   border-collapse: collapse;
@@ -181,7 +179,7 @@
   }
 }
 
-/* Mobile card layout - NO SCROLLING */
+/* Mobile card layout */
 @media (max-width: 767px) {
   .products-table thead {
     display: none;
@@ -200,7 +198,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 0;
+    padding: 12px 0;
     border-bottom: 1px solid #e2e8f0;
     text-align: right;
   }
@@ -215,6 +213,7 @@
     color: #334155;
     text-align: left;
     flex: 1;
+    font-size: 13px;
   }
   
   .product-image-cell {
@@ -242,12 +241,27 @@
   }
   
   .product-actions-cell {
-    justify-content: flex-end;
-    gap: 10px;
+    flex-direction: column;
+    align-items: stretch;
   }
   
   .product-actions-cell::before {
     content: "Actions";
+    margin-bottom: 8px;
+  }
+  
+  .product-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  
+  .edit-btn, .delete-btn {
+    width: 100%;
+    text-align: center;
+    padding: 10px 12px;
+    margin: 0;
   }
   
   .product-image-thumb {
@@ -345,12 +359,13 @@
 
 /* Action Buttons */
 .product-actions {
-  white-space: nowrap;
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .edit-btn, .delete-btn {
   padding: 6px 12px;
-  margin: 0 4px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -362,6 +377,7 @@
 .edit-btn {
   background-color: #e3f2fd;
   color: #1565c0;
+  margin-right: 8px;
 }
 
 .edit-btn:hover {
@@ -372,8 +388,20 @@
 .delete-btn {
   background-color: #ffebee;
   color: #c62828;
+  margin-right: 8px;
+}
+/* Product Category */
+.product-category-cell {
+  font-weight: 500;
+  color: #4a5568;
 }
 
+/* Update mobile view labels */
+@media (max-width: 767px) {
+  .product-category-cell::before {
+    content: "Category";
+  }
+}
 .delete-btn:hover {
   background-color: #c62828;
   color: white;
@@ -411,8 +439,17 @@
     font-size: 13px;
   }
   
+  .products-table tbody td {
+    padding: 10px 0;
+  }
+  
+  .products-table tbody td::before {
+    font-size: 12px;
+  }
+  
   .edit-btn, .delete-btn {
-    padding: 4px 8px;
-    font-size: 11px;
+    padding: 8px 12px;
+    font-size: 13px;
+    margin-right: 8px;
   }
 }

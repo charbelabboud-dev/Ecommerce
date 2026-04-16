@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import { useToast } from '../contexts/ToastContexts';
@@ -9,55 +9,54 @@ function Orders() {
   const navigate = useNavigate();
   const { addToast } = useToast();
 
-  // State variables
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  
+  const errorShown = useRef(false);
 
-  // Fetch orders when component mounts
   useEffect(() => {
     fetchOrders();
   }, []);
 
-  // Function to fetch orders from API
   const fetchOrders = async () => {
     try {
       setLoading(true);
       const response = await API.get('/orders');
       setOrders(response.data);
+      errorShown.current = false;
     } catch (error) {
       console.error('Error fetching orders:', error);
-      addToast('Failed to load orders', 'error');
+      if (!errorShown.current) {
+        addToast('Failed to load orders. Backend may be offline.', 'error');
+        errorShown.current = true;
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Function to update order status
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
       await API.put(`/orders/${orderId}/status`, newStatus);
       addToast(`Order status updated to ${newStatus}`, 'success');
-      fetchOrders(); // Refresh the list
+      fetchOrders();
     } catch (error) {
       console.error('Error updating order status:', error);
       addToast('Failed to update order status', 'error');
     }
   };
 
-  // Function to filter and search orders
   const getFilteredOrders = () => {
     let filtered = orders;
 
-    // Filter by status
     if (statusFilter !== 'all') {
       filtered = filtered.filter(order => order.order_Status === statusFilter);
     }
 
-    // Filter by search term
     if (searchTerm.trim() !== '') {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(order =>
@@ -70,24 +69,20 @@ function Orders() {
     return filtered;
   };
 
-  // Function to open order detail modal
   const handleViewDetails = (order) => {
     setSelectedOrder(order);
     setShowModal(true);
   };
 
-  // Function to close modal
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedOrder(null);
   };
 
-  // Function to go back to dashboard
   const goBack = () => {
     navigate('/');
   };
 
-  // Helper to get status badge class
   const getStatusClass = (status) => {
     switch (status) {
       case 'Pending': return 'status-pending';
@@ -99,10 +94,8 @@ function Orders() {
     }
   };
 
-  // Get filtered orders
   const filteredOrders = getFilteredOrders();
 
-  // Status counts for filter buttons
   const statusCounts = {
     all: orders.length,
     Pending: orders.filter(o => o.order_Status === 'Pending').length,
@@ -123,7 +116,6 @@ function Orders() {
         </div>
       </div>
 
-      {/* Filter Bar */}
       <div className="filter-bar">
         <div className="status-filter">
           <button
@@ -178,7 +170,6 @@ function Orders() {
         </div>
       </div>
 
-      {/* Orders Table */}
       {loading ? (
         <div className="loading">Loading orders...</div>
       ) : (
@@ -205,32 +196,21 @@ function Orders() {
               ) : (
                 filteredOrders.map((order) => (
                   <tr key={order.order_Id}>
-                    <td>{order.order_Number}</td>
-                    <td>{order.order_CustomerName}</td>
-                    <td>{order.order_CustomerPhone}</td>
-                    <td>{new Date(order.order_CreatedAt).toLocaleDateString()}</td>
-                    <td>
+                    <td data-label="Order #">{order.order_Number}</td>
+                    <td data-label="Customer">{order.order_CustomerName}</td>
+                    <td data-label="Phone">{order.order_CustomerPhone}</td>
+                    <td data-label="Date">{new Date(order.order_CreatedAt).toLocaleDateString()}</td>
+                    <td data-label="Total">
                       {order.order_Currency === 'USD' 
                         ? `$${order.order_TotalAmountUSD?.toFixed(2)}`
                         : `${order.order_TotalAmountLBP?.toFixed(2)} LBP`}
                     </td>
-                    <td>
+                    <td data-label="Status">
                       <span className={`status-badge ${getStatusClass(order.order_Status)}`}>
                         {order.order_Status}
                       </span>
                     </td>
-                    <td>
-                      <select
-                        className="status-select"
-                        value={order.order_Status}
-                        onChange={(e) => handleStatusUpdate(order.order_Id, e.target.value)}
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Confirmed">Confirmed</option>
-                        <option value="Shipped">Shipped</option>
-                        <option value="Delivered">Delivered</option>
-                        <option value="Cancelled">Cancelled</option>
-                      </select>
+                    <td data-label="Actions">
                       <button
                         className="view-details-btn"
                         onClick={() => handleViewDetails(order)}
@@ -246,7 +226,6 @@ function Orders() {
         </div>
       )}
 
-      {/* Order Detail Modal */}
       {showModal && (
         <OrderDetailModal
           order={selectedOrder}

@@ -107,6 +107,38 @@ form {
   box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
 }
 
+/* Category Select Dropdown */
+.category-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.category-select:focus {
+  outline: none;
+  border-color: #1e3a5f;
+  box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
+}
+
+.category-select:hover {
+  border-color: #1e3a5f;
+}
+
+.category-select option {
+  padding: 10px;
+}
+
 /* Currency Buttons */
 .currency-buttons {
   display: flex;
@@ -195,7 +227,7 @@ form {
   cursor: not-allowed;
 }
 
-/* Image Upload Area - Only for the image */
+/* Image Upload Area */
 .image-upload-area {
   border: 2px dashed #cbd5e1;
   border-radius: 12px;
@@ -210,7 +242,6 @@ form {
   border-color: #1e3a5f;
 }
 
-/* Current Image Container */
 .current-image {
   display: flex;
   justify-content: center;
@@ -225,14 +256,12 @@ form {
   object-fit: cover;
 }
 
-/* Remove Button Container - OUTSIDE the bordered area */
 .remove-image-container {
   display: flex;
   justify-content: flex-start;
   margin-top: 8px;
 }
 
-/* Remove Image Button */
 .remove-image-btn {
   padding: 8px 20px;
   background-color: white;
@@ -251,7 +280,6 @@ form {
   transform: translateY(-1px);
 }
 
-/* Upload Placeholder */
 .upload-placeholder {
   display: flex;
   flex-direction: column;
@@ -259,24 +287,20 @@ form {
   gap: 12px;
 }
 
-/* Upload Label - FIXED with white text */
-/* Upload Label - FORCED white text */
 .upload-label {
   display: inline-block;
   padding: 10px 24px;
   background-color: #1e3a5f;
-  color: #ffffff !important;
+  color: white;
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s ease;
-  text-decoration: none;
 }
 
 .upload-label:hover {
   background-color: #2c4c7a;
-  color: #ffffff !important;
   transform: translateY(-1px);
 }
 
@@ -350,5 +374,10 @@ form {
   .remove-image-btn {
     padding: 6px 12px;
     font-size: 12px;
+  }
+  
+  .category-select {
+    font-size: 13px;
+    padding: 8px 12px;
   }
 }

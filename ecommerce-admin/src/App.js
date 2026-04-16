@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import Orders from './pages/Orders';
+import Categories from './pages/Categories';
 import './App.css';
 
 function App() {
@@ -67,6 +68,11 @@ function App() {
           <Route path="*" element={
             isAuthenticated ? <Navigate to="/" /> : <Navigate to="/login" />
           } />
+          <Route path="/categories" element={
+  <ProtectedRoute>
+    <Categories />
+  </ProtectedRoute>
+} />
         </Routes>
       </Router>
     </ToastProvider>

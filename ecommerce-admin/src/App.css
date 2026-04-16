@@ -1,30 +1,360 @@
-* {
+/* Orders Page Styles */
+.orders-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+
+}
+
+.orders-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-left h1 {
+  font-size: 24px;
+  color: #1e3a5f;
   margin: 0;
-  padding: 0;
+  font-weight: 600;
+}
+/* Make sure everything fits on mobile */
+* {
   box-sizing: border-box;
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background-color: #f8f9fa;
-  color: #1e293b;
+html, body, #root {
+  width: 100%;
+  overflow-x: hidden;
+}
+.back-button {
+  padding: 8px 16px;
+  background-color: #e2e8f0;
+  color: #1e3a5f;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
-/* Professional scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.back-button:hover {
+  background-color: #cbd5e1;
+  transform: translateX(-2px);
 }
 
-::-webkit-scrollbar-track {
-  background: #e2e8f0;
+/* Filter Bar */
+.filter-bar {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #94a3b8;
-  border-radius: 4px;
+.status-filter {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+.filter-status-btn {
+  padding: 6px 14px;
+  background-color: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  color: #1e3a5f;
+}
+
+.filter-status-btn:hover {
+  background-color: #e2e8f0;
+}
+
+.filter-status-btn.active {
+  background-color: #1e3a5f;
+  color: white;
+  border-color: #1e3a5f;
+}
+
+/* Search Box */
+.search-box {
+  position: relative;
+  min-width: 250px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 35px 8px 15px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background-color: white;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #1e3a5f;
+  box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
+}
+
+.clear-search {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 16px;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-pending {
+  background-color: #fff3e0;
+  color: #ed6c02;
+}
+
+.status-confirmed {
+  background-color: #e3f2fd;
+  color: #0288d1;
+}
+
+.status-shipped {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-delivered {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-cancelled {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+}
+
+/* ============================================ */
+/* DESKTOP VIEW (screen wider than 768px)      */
+/* ============================================ */
+@media (min-width: 769px) {
+  .orders-table-container {
+    overflow-x: auto;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+  }
+  
+  .orders-table th {
+    text-align: left;
+    padding: 16px;
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #334155;
+    font-size: 14px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .orders-table td {
+    padding: 16px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #1e293b;
+    font-size: 14px;
+    vertical-align: middle;
+  }
+  
+  .orders-table tr:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .status-select {
+    padding: 6px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    background-color: white;
+  }
+  
+  .view-details-btn {
+    padding: 6px 12px;
+    background-color: #e3f2fd;
+    color: #1565c0;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    margin-left: 8px;
+  }
+  
+  .view-details-btn:hover {
+    background-color: #1565c0;
+    color: white;
+  }
+}
+
+/* ============================================ */
+/* MOBILE VIEW (screen 768px or smaller)       */
+/* ============================================ */
+@media (max-width: 768px) {
+  .orders-container {
+    padding: 12px;
+  }
+  
+  .orders-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .header-left {
+    justify-content: space-between;
+  }
+  
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .status-filter {
+    justify-content: center;
+  }
+  
+  .search-box {
+    width: 100%;
+  }
+  
+  /* Hide the entire table header on mobile */
+  .orders-table thead {
+    display: none;
+  }
+  
+  /* Make table behave like a block container */
+  .orders-table,
+  .orders-table tbody,
+  .orders-table tr,
+  .orders-table td {
+    display: block;
+    width: 100%;
+  }
+  
+  /* Style each row as a card */
+  .orders-table tr {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Style each cell as a flex row */
+  .orders-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: right;
+  }
+  
+  /* Remove border from last cell */
+  .orders-table td:last-child {
+    border-bottom: none;
+  }
+  
+  /* Add labels before each cell value */
+  .orders-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #1e3a5f;
+    text-align: left;
+    flex: 1;
+    font-size: 13px;
+  }
+  
+  /* Action buttons row - special handling */
+  .orders-table td:last-child {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .status-select {
+    flex: 2;
+    min-width: 120px;
+    padding: 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+    background-color: white;
+  }
+  
+  .view-details-btn {
+    flex: 1;
+    padding: 8px 12px;
+    background-color: #e3f2fd;
+    color: #1565c0;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  
+  .view-details-btn:hover {
+    background-color: #1565c0;
+    color: white;
+  }
+  
+  .orders-table-container {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    overflow-x: visible;
+  }
 }

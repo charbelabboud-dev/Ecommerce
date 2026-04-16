@@ -132,3 +132,19 @@ VALUES (
     '+961 00 000 000'
 );
 GO
+-- Create Categories table
+CREATE TABLE Categories (
+    Category_Id INT PRIMARY KEY IDENTITY(1,1),
+    Category_Name NVARCHAR(100) NOT NULL UNIQUE,
+    Category_Slug NVARCHAR(100) NOT NULL UNIQUE,
+    Category_Description NVARCHAR(500) NULL,
+    Category_ImageUrl NVARCHAR(500) NULL,
+    Category_DisplayOrder INT DEFAULT 0,
+    Category_IsActive BIT DEFAULT 1,
+    Category_CreatedAt DATETIME2 DEFAULT GETDATE(),
+    Category_UpdatedAt DATETIME2 DEFAULT GETDATE()
+);
+
+-- Add CategoryId to Products table
+ALTER TABLE Products ADD Product_CategoryId INT NULL;
+ALTER TABLE Products ADD FOREIGN KEY (Product_CategoryId) REFERENCES Categories(Category_Id);

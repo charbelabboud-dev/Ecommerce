@@ -21,6 +21,8 @@ public class Product
     public bool Product_IsFeatured { get; set; } = false;  
     public DateTime Product_CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime Product_UpdatedAt { get; set; } = DateTime.UtcNow;
+    public int? Product_CategoryId { get; set; }
+    public virtual Category? Category { get; set; }
 
     public virtual AdminUser? AdminUser { get; set; }
     public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();

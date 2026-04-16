@@ -25,6 +25,7 @@ public class ProductsController : ControllerBase
         var products = await _context.Products
             // .Where(p => p.Product_IsActive == true)
             .Include(p => p.ProductImages)
+            .Include(p => p.Category)
             .OrderBy(p => p.Product_Name)
             .ToListAsync();
 
@@ -37,6 +38,7 @@ public class ProductsController : ControllerBase
     {
         var product = await _context.Products
             .Include(p => p.ProductImages)
+            .Include(p => p.Category)
             .FirstOrDefaultAsync(p => p.Product_Id == id);
 
         if (product == null)
@@ -69,6 +71,36 @@ public async Task<ActionResult<Product>> CreateProduct(Product product)
     return CreatedAtAction(nameof(GetProduct), new { id = product.Product_Id }, product);
 }
 
+// GET: api/products/low-stock
+[HttpGet("low-stock")]
+public async Task<ActionResult<IEnumerable<Product>>> GetLowStockProducts()
+{
+    var lowStockProducts = await _context.Products
+        .Where(p => p.Product_Stock <= 5 && p.Product_Stock > 0)
+        .Include(p => p.Category)
+        .OrderBy(p => p.Product_Stock)
+        .ToListAsync();
+
+    return Ok(lowStockProducts);
+}
+// PATCH: api/products/{id}/stock
+[Authorize]
+[HttpPatch("{id}/stock")]
+public async Task<IActionResult> UpdateStock(int id, [FromBody] int newStock)
+{
+    var product = await _context.Products.FindAsync(id);
+    if (product == null)
+    {
+        return NotFound($"Product with ID {id} not found.");
+    }
+    
+    product.Product_Stock = newStock;
+    product.Product_UpdatedAt = DateTime.UtcNow;
+    
+    await _context.SaveChangesAsync();
+    
+    return Ok(new { message = "Stock updated successfully", stock = product.Product_Stock });
+}
     // PUT: api/products/5
     [Authorize]
     [HttpPut("{id}")]
@@ -99,6 +131,7 @@ public async Task<ActionResult<Product>> CreateProduct(Product product)
         existingProduct.Product_IsActive = updatedProduct.Product_IsActive;
         existingProduct.Product_IsFeatured = updatedProduct.Product_IsFeatured;
         existingProduct.Product_UpdatedAt = DateTime.UtcNow;
+        existingProduct.Product_CategoryId = updatedProduct.Product_CategoryId;
 
         await _context.SaveChangesAsync();
 

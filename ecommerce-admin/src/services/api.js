@@ -10,7 +10,7 @@ const API = axios.create({
     },
 });
 
-//interCeptors runs before every request ! checks is a token exists in the browsers storage , if yes adds authorization : Bearer in front of it ! 
+//interCeptors runs before every request ! checks if a token exists in the browsers storage , if yes adds authorization : Bearer in front of it ! 
 API.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');

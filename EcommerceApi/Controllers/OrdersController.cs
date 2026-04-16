@@ -19,34 +19,81 @@ public class OrdersController : ControllerBase
 
     // POST: api/orders (Customer checkout)
     [HttpPost]
-    public async Task<ActionResult<Order>> CreateOrder(Order order)
+// POST: api/orders (Customer checkout)
+[HttpPost]
+public async Task<ActionResult<Order>> CreateOrder(Order order)
+{
+    // Generate a unique order number
+    order.Order_Number = GenerateOrderNumber();
+    
+    // Set admin ID (hardcoded for V1 - admin ID 1)
+    order.Order_AdminUserId = 1;
+    
+    // Set timestamps
+    order.Order_CreatedAt = DateTime.UtcNow;
+    order.Order_UpdatedAt = DateTime.UtcNow;
+    
+    // Set default statuses
+    order.Order_Status = "Pending";
+    order.Order_PaymentStatus = "Unpaid";
+    
+    // Calculate totals from OrderItems if not provided
+    if (order.Order_TotalAmountUSD == null && order.Order_TotalAmountLBP == null)
     {
-        // Generate a unique order number
-        order.Order_Number = GenerateOrderNumber();
-        
-        // Set admin ID (hardcoded for V1 - admin ID 1)
-        order.Order_AdminUserId = 1;
-        
-        // Set timestamps
-        order.Order_CreatedAt = DateTime.UtcNow;
-        order.Order_UpdatedAt = DateTime.UtcNow;
-        
-        // Set default statuses
-        order.Order_Status = "Pending";
-        order.Order_PaymentStatus = "Unpaid";
-        
-        // Calculate totals from OrderItems if not provided
-        if (order.Order_TotalAmountUSD == null && order.Order_TotalAmountLBP == null)
-        {
-            CalculateOrderTotals(order);
-        }
-
-        _context.Orders.Add(order);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetOrder), new { id = order.Order_Id }, order);
+        CalculateOrderTotals(order);
     }
 
+    // ========== DEDUCT STOCK FOR EACH ITEM ==========
+    foreach (var item in order.OrderItems)
+    {
+        var product = await _context.Products.FindAsync(item.OrderItem_ProductId);
+        if (product == null)
+        {
+            return BadRequest($"Product with ID {item.OrderItem_ProductId} not found.");
+        }
+        
+        // Check if enough stock is available
+        if (product.Product_Stock < item.OrderItem_Quantity)
+        {
+            return BadRequest($"Insufficient stock for product: {product.Product_Name}. Available: {product.Product_Stock}, Requested: {item.OrderItem_Quantity}");
+        }
+        
+        // Deduct stock
+        product.Product_Stock -= item.OrderItem_Quantity;
+        product.Product_UpdatedAt = DateTime.UtcNow;
+    }
+
+    _context.Orders.Add(order);
+    await _context.SaveChangesAsync();
+
+    return CreatedAtAction(nameof(GetOrder), new { id = order.Order_Id }, order);
+}
+
+
+[HttpGet("lookup")]
+public async Task<ActionResult<IEnumerable<Order>>> LookupOrders([FromQuery] string? phone, [FromQuery] string? email)
+{
+    IQueryable<Order> query = _context.Orders.Include(o => o.OrderItems);
+    
+    if (!string.IsNullOrEmpty(phone))
+    {
+        query = query.Where(o => o.Order_CustomerPhone.Contains(phone));
+    }
+    else if (!string.IsNullOrEmpty(email))
+    {
+        query = query.Where(o => o.Order_CustomerEmail != null && o.Order_CustomerEmail.Contains(email));
+    }
+    else
+    {
+        return BadRequest("Please provide either phone number or email");
+    }
+    
+    var orders = await query
+        .OrderByDescending(o => o.Order_CreatedAt)
+        .ToListAsync();
+    
+    return Ok(orders);
+}
     // GET: api/orders (Admin views all orders)
     [Authorize]
     [HttpGet]

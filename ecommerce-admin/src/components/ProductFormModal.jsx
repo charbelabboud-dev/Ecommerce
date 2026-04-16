@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import API from '../services/api';
-import { useToast } from '../contexts/ToastContexts';
+import { useToast } from '../contexts/ToastContexts.jsx';
 import './ProductFormModal.css';
 
 function ProductFormModal({ product, onSave, onClose, onRefresh }) {
   const { addToast } = useToast();
+  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     product_Name: '',
     product_Description: '',
@@ -14,13 +15,27 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
     product_Stock: '',
     product_SKU: '',
     product_IsActive: true,
-    product_IsFeatured: false
+    product_IsFeatured: false,
+    product_CategoryId: ''
   });
 
   const [loading, setLoading] = useState(false);
   const [currency, setCurrency] = useState('USD');
   const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+
+  // Fetch categories when modal opens
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await API.get('/categories');
+        setCategories(response.data);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   // Populate form when editing
   useEffect(() => {
@@ -34,7 +49,8 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
         product_Stock: product.product_Stock || '',
         product_SKU: product.product_SKU || '',
         product_IsActive: product.product_IsActive !== undefined ? product.product_IsActive : true,
-        product_IsFeatured: product.product_IsFeatured || false
+        product_IsFeatured: product.product_IsFeatured || false,
+        product_CategoryId: product.product_CategoryId || ''
       });
       
       if (product.product_PriceUSD && product.product_PriceUSD > 0) {
@@ -54,7 +70,8 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
         product_Stock: '',
         product_SKU: '',
         product_IsActive: true,
-        product_IsFeatured: false
+        product_IsFeatured: false,
+        product_CategoryId: ''
       });
       setCurrency('USD');
       setImageFile(null);
@@ -120,6 +137,7 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
     
     const submitData = {
       product_Name: formData.product_Name,
+       product_CategoryId: formData.product_CategoryId ? parseInt(formData.product_CategoryId) : null,
       product_Description: formData.product_Description || null,
       product_ShortDescription: formData.product_ShortDescription || null,
       product_PriceUSD: currency === 'USD' ? parseFloat(formData.product_PriceUSD) : null,
@@ -129,7 +147,8 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
       product_Stock: formData.product_Stock ? parseInt(formData.product_Stock) : 0,
       product_SKU: formData.product_SKU || null,
       product_IsActive: formData.product_IsActive,
-      product_IsFeatured: formData.product_IsFeatured
+      product_IsFeatured: formData.product_IsFeatured,
+      product_CategoryId: formData.product_CategoryId ? parseInt(formData.product_CategoryId) : null
     };
     
     if (product) {
@@ -163,10 +182,27 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
             />
           </div>
           
+          {/* Category Dropdown */}
+          <div className="form-group">
+            <label>Category</label>
+            <select
+              name="product_CategoryId"
+              value={formData.product_CategoryId}
+              onChange={handleChange}
+              className="category-select"
+            >
+              <option value="">-- Select Category --</option>
+              {categories.map(category => (
+                <option key={category.category_Id} value={category.category_Id}>
+                  {category.category_Name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
           {/* Image Upload */}
           <div className="form-group">
             <label>Product Image</label>
-            
             <div className="image-upload-area">
               {(product?.productImages?.[0]?.productImage_ImageUrl && !imageFile) ? (
                 <div className="current-image">
@@ -175,6 +211,13 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
                     alt="Current"
                     className="current-image-preview"
                   />
+                  <button 
+                    type="button" 
+                    className="remove-image-btn"
+                    onClick={handleRemoveImage}
+                  >
+                    Remove Image
+                  </button>
                 </div>
               ) : (
                 <div className="upload-placeholder">
@@ -192,18 +235,6 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
                 </div>
               )}
             </div>
-            
-            {(product?.productImages?.[0]?.productImage_ImageUrl && !imageFile) && (
-              <div className="remove-image-container">
-                <button 
-                  type="button" 
-                  className="remove-image-btn"
-                  onClick={handleRemoveImage}
-                >
-                  Remove Image
-                </button>
-              </div>
-            )}
           </div>
           
           <div className="form-group">

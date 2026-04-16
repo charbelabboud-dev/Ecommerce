@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import { useToast } from '../contexts/ToastContexts';
@@ -14,6 +14,9 @@ function Products() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Track if error already shown to prevent duplicate toasts
+  const errorShown = useRef(false);
 
   // Fetch products when component mounts
   useEffect(() => {
@@ -26,9 +29,13 @@ function Products() {
       setLoading(true);
       const response = await API.get("/products");
       setProducts(response.data);
+      errorShown.current = false; // Reset error flag on success
     } catch (error) {
       console.error("Error fetching products:", error);
-      addToast("Failed to load products", "error");
+      if (!errorShown.current) {
+        addToast("Failed to load products. Backend may be offline.", "error");
+        errorShown.current = true;
+      }
     } finally {
       setLoading(false);
     }
@@ -38,7 +45,6 @@ function Products() {
   const getFilteredProducts = () => {
     let filtered = products;
     
-    // Apply status filter
     if (filter === 'active') {
       filtered = filtered.filter(p => p.product_IsActive === true);
     }
@@ -46,7 +52,6 @@ function Products() {
       filtered = filtered.filter(p => p.product_IsActive === false);
     }
     
-    // Apply search filter
     if (searchTerm.trim() !== '') {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(p => 
@@ -61,7 +66,6 @@ function Products() {
 
   const filteredProducts = getFilteredProducts();
 
-  // Function to handle delete
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
@@ -75,25 +79,21 @@ function Products() {
     }
   };
 
-  // Function to open modal for add
   const handleAdd = () => {
     setEditingProduct(null);
     setShowModal(true);
   };
 
-  // Function to open modal for edit
   const handleEdit = (product) => {
     setEditingProduct(product);
     setShowModal(true);
   };
 
-  // Function to close modal
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingProduct(null);
   };
 
-  // Function to save product (add or update)
   const handleSaveProduct = async (productData) => {
     try {
       if (editingProduct) {
@@ -117,7 +117,6 @@ function Products() {
     }
   };
 
-  // Navigate back to dashboard
   const goBack = () => {
     navigate('/');
   };
@@ -179,6 +178,7 @@ function Products() {
               <tr>
                 <th>Image</th>
                 <th>Name</th>
+                <th>Category</th>
                 <th>Price</th>
                 <th>Stock</th>
                 <th>Status</th>
@@ -215,6 +215,9 @@ function Products() {
                     <td className="product-name-cell" data-label="Name">
                       {product.product_Name}
                     </td>
+                    <td className="product-category-cell" data-label="Category">
+  {product.category?.category_Name || 'Uncategorized'}
+</td>
                     <td className="product-price-cell" data-label="Price">
                       {product.product_PriceUSD 
                         ? `$${product.product_PriceUSD.toFixed(2)}` 
