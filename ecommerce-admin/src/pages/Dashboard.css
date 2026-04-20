@@ -27,6 +27,32 @@
   font-weight: 600;
 }
 
+.header-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.settings-button {
+  padding: 8px 20px;
+  background: #ffffff;
+  color: #2c7a7d;
+  border: 1px solid #2c7a7d;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-button:hover {
+  background: #2c7a7d;
+  color: white;
+}
+
 .logout-button {
   padding: 8px 20px;
   background: #ffffff;
@@ -111,47 +137,91 @@
   border-color: #1e3a5f;
 }
 
-/* Low Stock Alert Card */
-.low-stock-card {
+/* Stock Alerts Container */
+.stock-alerts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* Stock Card Base */
+.stock-card {
   background: white;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
-  margin-bottom: 24px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+/* Out of Stock Card - RED */
+.out-of-stock-card {
+  border-left: 4px solid #c62828;
+}
+
+.out-of-stock-header {
+  background: linear-gradient(135deg, #ffebee 0%, #fff 100%);
+  border-bottom: 1px solid #ffcdd2;
+}
+
+.out-of-stock-header h4 {
+  color: #c62828;
+}
+
+.out-of-stock-badge {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+/* Low Stock Card - ORANGE */
+.low-stock-card {
+  border-left: 4px solid #ed6c02;
+}
+
 .low-stock-header {
+  background: linear-gradient(135deg, #fff3e0 0%, #fff 100%);
+  border-bottom: 1px solid #ffe0b2;
+}
+
+.low-stock-header h4 {
+  color: #ed6c02;
+}
+
+.low-stock-badge {
+  background-color: #fff3e0;
+  color: #ed6c02;
+}
+
+/* Stock Header */
+.stock-header {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background: linear-gradient(135deg, #fff8e7 0%, #fff 100%);
-  border-bottom: 1px solid #e2e8f0;
 }
 
-.low-stock-icon {
+.stock-icon {
   font-size: 24px;
 }
 
-.low-stock-info h4 {
+.stock-info h4 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #ed6c02;
 }
 
-.low-stock-info p {
+.stock-info p {
   margin: 4px 0 0;
   font-size: 13px;
   color: #64748b;
 }
 
-.low-stock-items {
+/* Stock Items */
+.stock-items {
   padding: 8px 0;
 }
 
-.low-stock-item {
+.stock-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -161,7 +231,7 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
-.low-stock-item:hover {
+.stock-item:hover {
   background-color: #f8f9fa;
 }
 
@@ -178,12 +248,7 @@
   font-weight: 500;
 }
 
-.stock-badge.danger {
-  background-color: #fff3e0;
-  color: #ed6c02;
-}
-
-.low-stock-more {
+.stock-more {
   padding: 10px 20px;
   text-align: center;
   font-size: 13px;
@@ -193,7 +258,7 @@
   transition: background-color 0.2s ease;
 }
 
-.low-stock-more:hover {
+.stock-more:hover {
   background-color: #f8f9fa;
   color: #1e3a5f;
 }
@@ -222,6 +287,10 @@
     font-size: 20px;
   }
   
+  .header-buttons {
+    justify-content: center;
+  }
+  
   .stats-grid {
     gap: 16px;
   }
@@ -239,19 +308,19 @@
     font-size: 13px;
   }
   
-  .low-stock-header {
+  .stock-header {
     padding: 12px 16px;
   }
   
-  .low-stock-info h4 {
+  .stock-info h4 {
     font-size: 14px;
   }
   
-  .low-stock-info p {
+  .stock-info p {
     font-size: 12px;
   }
   
-  .low-stock-item {
+  .stock-item {
     padding: 10px 16px;
   }
   
@@ -281,6 +350,16 @@
   }
   
   .nav-button {
+    justify-content: center;
+  }
+  
+  .header-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .settings-button, .logout-button {
+    width: 100%;
     justify-content: center;
   }
 }

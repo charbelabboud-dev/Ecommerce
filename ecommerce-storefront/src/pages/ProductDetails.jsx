@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import { useCart } from '../contexts/CartContext';
 import ProductCard from '../components/ProductCard';
+import { getProductReviews, getProductRating, submitReview } from '../services/reviewApi';
+import { addToWishlist, removeFromWishlist, checkInWishlist } from '../services/wishlistApi';
 
 function ProductDetail() {
   const { id } = useParams();
@@ -14,6 +16,22 @@ function ProductDetail() {
   const [mainImage, setMainImage] = useState(null);
   const [activeTab, setActiveTab] = useState('description');
   const [relatedProducts, setRelatedProducts] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [rating, setRating] = useState({ averageRating: 0, reviewCount: 0 });
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  
+  // Wishlist states
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [customerEmail, setCustomerEmail] = useState('');
+  
+  const [reviewForm, setReviewForm] = useState({
+    review_CustomerName: '',
+    review_CustomerEmail: '',
+    review_Rating: 5,
+    review_Comment: '',
+    review_ProductId: parseInt(id)
+  });
 
   // Reset state when product ID changes
   useEffect(() => {
@@ -28,14 +46,24 @@ function ProductDetail() {
   useEffect(() => {
     if (product) {
       fetchRelatedProducts();
+      fetchReviews();
+      fetchRating();
+      checkWishlistStatus();
     }
   }, [product]);
+
+  // Load customer email from localStorage
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('customerEmail');
+    if (savedEmail) {
+      setCustomerEmail(savedEmail);
+    }
+  }, []);
 
   const fetchProduct = async () => {
     try {
       const response = await API.get(`/products/${id}`);
       setProduct(response.data);
-      // Set main image from the new product's images
       if (response.data.productImages && response.data.productImages.length > 0) {
         setMainImage(response.data.productImages[0].productImage_ImageUrl);
       } else {
@@ -60,6 +88,71 @@ function ProductDetail() {
       setRelatedProducts(sameCategoryProducts.slice(0, 4));
     } catch (error) {
       console.error('Error fetching related products:', error);
+    }
+  };
+
+  const fetchReviews = async () => {
+    const productReviews = await getProductReviews(parseInt(id));
+    setReviews(productReviews);
+  };
+
+  const fetchRating = async () => {
+    const productRating = await getProductRating(parseInt(id));
+    setRating(productRating);
+  };
+
+  const checkWishlistStatus = async () => {
+    const savedEmail = localStorage.getItem('customerEmail');
+    if (savedEmail && product) {
+      const inWishlist = await checkInWishlist(savedEmail, product.product_Id);
+      setIsInWishlist(inWishlist);
+    }
+  };
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    setSubmittingReview(true);
+    try {
+      await submitReview(reviewForm);
+      alert('Review submitted! Awaiting admin approval.');
+      setShowReviewForm(false);
+      setReviewForm({
+        ...reviewForm,
+        review_CustomerName: '',
+        review_CustomerEmail: '',
+        review_Rating: 5,
+        review_Comment: ''
+      });
+      fetchReviews();
+      fetchRating();
+    } catch (error) {
+      alert('Failed to submit review');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const handleWishlistToggle = async () => {
+    const email = localStorage.getItem('customerEmail');
+    if (!email) {
+      const userEmail = prompt('Enter your email to save items to wishlist:');
+      if (userEmail) {
+        localStorage.setItem('customerEmail', userEmail);
+        setCustomerEmail(userEmail);
+        await addToWishlist(userEmail, product.product_Id);
+        setIsInWishlist(true);
+        alert('Added to wishlist!');
+      }
+    } else {
+      if (isInWishlist) {
+        await removeFromWishlist(email, product.product_Id);
+        setIsInWishlist(false);
+        alert('Removed from wishlist');
+      } else {
+        await addToWishlist(email, product.product_Id);
+        setIsInWishlist(true);
+        alert('Added to wishlist!');
+      }
     }
   };
 
@@ -189,9 +282,10 @@ function ProductDetail() {
             
             <div className="product-rating">
               <div className="stars">
-                <span>★★★★★</span>
+                {'★'.repeat(Math.round(rating.averageRating))}
+                {'☆'.repeat(5 - Math.round(rating.averageRating))}
               </div>
-              <span className="rating-text">No reviews yet</span>
+              <span className="rating-text">({rating.reviewCount} reviews)</span>
             </div>
 
             <div className="product-pricing">
@@ -226,30 +320,40 @@ function ProductDetail() {
                 <span className="meta-value">{product.category?.category_Name || 'Uncategorized'}</span>
               </div>
             </div>
+            <div className="meta-item">
+    <span className="meta-label">Shipping Fee:</span>
+    <span className="meta-value">
+      {product.product_ShippingFee > 0 
+        ? `$${product.product_ShippingFee.toFixed(2)}` 
+        : 'Free'}
+    </span>
+  </div>
 
-            <div className="quantity-section">
-              <div className="quantity-selector">
-                <button 
-                  className="qty-btn"
-                  onClick={() => quantity > 1 && setQuantity(quantity - 1)}
-                  disabled={quantity <= 1}
-                >
-                  −
-                </button>
-                <input
-                  type="number"
-                  value={quantity}
-                  onChange={handleQuantityChange}
-                  min="1"
-                  max={product.product_Stock || 999}
-                />
-                <button 
-                  className="qty-btn"
-                  onClick={() => setQuantity(quantity + 1)}
-                  disabled={isOutOfStock || (product.product_Stock && quantity >= product.product_Stock)}
-                >
-                  +
-                </button>
+            <div className="product-detail-actions">
+              <div className="quantity-section">
+                <div className="quantity-selector">
+                  <button 
+                    className="qty-btn"
+                    onClick={() => quantity > 1 && setQuantity(quantity - 1)}
+                    disabled={quantity <= 1}
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    value={quantity}
+                    onChange={handleQuantityChange}
+                    min="1"
+                    max={product.product_Stock || 999}
+                  />
+                  <button 
+                    className="qty-btn"
+                    onClick={() => setQuantity(quantity + 1)}
+                    disabled={isOutOfStock || (product.product_Stock && quantity >= product.product_Stock)}
+                  >
+                    +
+                  </button>
+                </div>
               </div>
               <button 
                 className="add-to-cart-main"
@@ -257,6 +361,12 @@ function ProductDetail() {
                 disabled={isOutOfStock}
               >
                 {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+              </button>
+              <button 
+                className="wishlist-detail-btn"
+                onClick={handleWishlistToggle}
+              >
+                {isInWishlist ? '❤️ Remove from Wishlist' : '🤍 Add to Wishlist'}
               </button>
             </div>
 
@@ -336,6 +446,100 @@ function ProductDetail() {
                 <h4>Returns Policy</h4>
                 <p>You can return any item within 14 days of delivery for a full refund. Items must be unused and in original packaging.</p>
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div className="reviews-section">
+          <div className="reviews-header">
+            <div>
+              <h3>Customer Reviews</h3>
+              <div className="rating-summary">
+                <span className="average-rating">{rating.averageRating.toFixed(1)}</span>
+                <div className="stars-display">
+                  {'★'.repeat(Math.round(rating.averageRating))}
+                  {'☆'.repeat(5 - Math.round(rating.averageRating))}
+                </div>
+                <span className="review-count">({rating.reviewCount} reviews)</span>
+              </div>
+            </div>
+            <button 
+              className="write-review-btn"
+              onClick={() => setShowReviewForm(!showReviewForm)}
+            >
+              {showReviewForm ? 'Cancel' : 'Write a Review'}
+            </button>
+          </div>
+
+          {showReviewForm && (
+            <form className="review-form" onSubmit={handleReviewSubmit}>
+              <h4>Write Your Review</h4>
+              <div className="form-group">
+                <label>Name *</label>
+                <input
+                  type="text"
+                  value={reviewForm.review_CustomerName}
+                  onChange={(e) => setReviewForm({...reviewForm, review_CustomerName: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Email *</label>
+                <input
+                  type="email"
+                  value={reviewForm.review_CustomerEmail}
+                  onChange={(e) => setReviewForm({...reviewForm, review_CustomerEmail: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Rating *</label>
+                <select
+                  value={reviewForm.review_Rating}
+                  onChange={(e) => setReviewForm({...reviewForm, review_Rating: parseInt(e.target.value)})}
+                >
+                  <option value="5">★★★★★ (5/5) - Excellent</option>
+                  <option value="4">★★★★☆ (4/5) - Very Good</option>
+                  <option value="3">★★★☆☆ (3/5) - Good</option>
+                  <option value="2">★★☆☆☆ (2/5) - Fair</option>
+                  <option value="1">★☆☆☆☆ (1/5) - Poor</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Your Review *</label>
+                <textarea
+                  rows="4"
+                  value={reviewForm.review_Comment}
+                  onChange={(e) => setReviewForm({...reviewForm, review_Comment: e.target.value})}
+                  required
+                />
+              </div>
+              <button type="submit" disabled={submittingReview}>
+                {submittingReview ? 'Submitting...' : 'Submit Review'}
+              </button>
+            </form>
+          )}
+
+          <div className="reviews-list">
+            {reviews.length === 0 ? (
+              <p className="no-reviews">No reviews yet. Be the first to review this product!</p>
+            ) : (
+              reviews.map(review => (
+                <div key={review.review_Id} className="review-card">
+                  <div className="review-header">
+                    <strong>{review.review_CustomerName}</strong>
+                    <div className="review-stars">
+                      {'★'.repeat(review.review_Rating)}
+                      {'☆'.repeat(5 - review.review_Rating)}
+                    </div>
+                    <span className="review-date">
+                      {new Date(review.review_CreatedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="review-comment">{review.review_Comment}</p>
+                </div>
+              ))
             )}
           </div>
         </div>

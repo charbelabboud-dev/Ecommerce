@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import API from '../services/api';
@@ -20,10 +20,25 @@ function Checkout() {
     return firstItem?.product_PriceUSD ? 'USD' : 'LBP';
   };
 
-  const getTotal = () => {
-    const total = getCartTotal();
-    const currency = getCurrency();
-    return currency === 'USD' ? `$${total.toFixed(2)}` : `${total.toFixed(2)} LBP`;
+  const getSubtotal = () => {
+    return getCartTotal();
+  };
+
+  const calculateTotalShipping = () => {
+    const total = cartItems.reduce((sum, item) => {
+      const shippingFee = item.product_ShippingFee || 0;
+      return sum + shippingFee * item.quantity;
+    }, 0);
+    return total;
+  };
+
+  const subtotal = getSubtotal();
+  const shippingTotal = calculateTotalShipping();
+  const grandTotal = subtotal + shippingTotal;
+  const currency = getCurrency();
+
+  const getFormattedPrice = (price) => {
+    return currency === 'USD' ? `$${price.toFixed(2)}` : `${price.toFixed(2)} LBP`;
   };
 
   const handleChange = (e) => {
@@ -37,7 +52,6 @@ function Checkout() {
     e.preventDefault();
     setLoading(true);
 
-    // Prepare order items
     const orderItems = cartItems.map(item => ({
       orderItem_ProductId: item.product_Id,
       orderItem_ProductName: item.product_Name,
@@ -49,21 +63,18 @@ function Checkout() {
       orderItem_TotalPriceLBP: item.product_PriceLBP ? item.product_PriceLBP * item.quantity : null,
     }));
 
-    const currency = getCurrency();
-    const total = getCartTotal();
-
     const orderData = {
       order_CustomerName: formData.customerName,
       order_CustomerPhone: formData.customerPhone,
       order_CustomerEmail: formData.customerEmail || null,
       order_CustomerAddress: formData.customerAddress,
       order_Currency: currency,
-      order_SubtotalUSD: currency === 'USD' ? total : null,
-      order_SubtotalLBP: currency === 'LBP' ? total : null,
-      order_ShippingFeeUSD: 0,
-      order_ShippingFeeLBP: 0,
-      order_TotalAmountUSD: currency === 'USD' ? total : null,
-      order_TotalAmountLBP: currency === 'LBP' ? total : null,
+      order_SubtotalUSD: currency === 'USD' ? subtotal : null,
+      order_SubtotalLBP: currency === 'LBP' ? subtotal : null,
+      order_ShippingFeeUSD: currency === 'USD' ? shippingTotal : null,
+      order_ShippingFeeLBP: currency === 'LBP' ? shippingTotal : null,
+      order_TotalAmountUSD: currency === 'USD' ? grandTotal : null,
+      order_TotalAmountLBP: currency === 'LBP' ? grandTotal : null,
       order_Notes: formData.notes || null,
       order_Status: 'Pending',
       order_PaymentMethod: 'COD',
@@ -176,15 +187,19 @@ function Checkout() {
             <div className="summary-totals">
               <div className="summary-row">
                 <span>Subtotal ({getCartCount()} items):</span>
-                <span>{getTotal()}</span>
+                <span>{getFormattedPrice(subtotal)}</span>
               </div>
               <div className="summary-row">
                 <span>Shipping:</span>
-                <span>Free (Cash on Delivery)</span>
+                <span>
+                  {shippingTotal === 0 
+                    ? 'Free' 
+                    : getFormattedPrice(shippingTotal)}
+                </span>
               </div>
               <div className="summary-row total">
                 <span>Total:</span>
-                <span>{getTotal()}</span>
+                <span>{getFormattedPrice(grandTotal)}</span>
               </div>
             </div>
             <button type="submit" className="place-order-btn" disabled={loading}>

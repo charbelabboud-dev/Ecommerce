@@ -23,41 +23,42 @@ public class AuthController : ControllerBase
     }
 
     // POST: api/auth/login
-    [HttpPost("login")]
-    public async Task<ActionResult<object>> Login([FromBody] LoginRequest request)
+[HttpPost("login")]
+public async Task<ActionResult<object>> Login([FromBody] LoginRequest request)
+{
+    var admin = await _context.AdminUsers
+        .FirstOrDefaultAsync(a => a.AdminUser_Username == request.Username);
+
+    if (admin == null)
     {
-        // Find admin by username
-        var admin = await _context.AdminUsers
-            .FirstOrDefaultAsync(a => a.AdminUser_Username == request.Username);
-
-        if (admin == null)
-        {
-            return Unauthorized(new { message = "Invalid username or password." });
-        }
-
-        // Verify password (V1: plain text comparison - will upgrade to BCrypt later)
-        if (request.Password != "admin123")
-        {
-            return Unauthorized(new { message = "Invalid username or password." });
-        }
-
-        // Generate JWT token
-        var token = GenerateJwtToken(admin);
-
-        return Ok(new
-        {
-            message = "Login successful",
-            token = token,
-            admin = new
-            {
-                admin.AdminUser_Id,
-                admin.AdminUser_Username,
-                admin.AdminUser_Email,
-                admin.AdminUser_StoreName
-            }
-        });
+        return Unauthorized(new { message = "Invalid username or password." });
     }
 
+    // Verify password (V1: plain text comparison)
+    if (request.Password != "admin123")
+    {
+        return Unauthorized(new { message = "Invalid username or password." });
+    }
+
+    // Generate JWT token
+    var token = GenerateJwtToken(admin);
+
+    return Ok(new
+    {
+        message = "Login successful",
+        token = token,
+        admin = new
+        {
+            admin.AdminUser_Id,
+            admin.AdminUser_Username,
+            admin.AdminUser_Email,
+            admin.AdminUser_StoreName,
+            admin.AdminUser_StorePhone,     // ← ADD THIS
+            admin.AdminUser_StoreAddress,   // ← ADD THIS
+            admin.AdminUser_StoreLogo       // ← ADD THIS
+        }
+    });
+}
     // POST: api/auth/register (Create first admin - one time use)
     [HttpPost("register")]
     public async Task<ActionResult<object>> Register([FromBody] RegisterRequest request)

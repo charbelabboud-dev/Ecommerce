@@ -6,7 +6,10 @@ import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import Orders from './pages/Orders';
 import Categories from './pages/Categories';
+import Settings from './pages/Settings';
+import AdminReviews from './pages/AdminReviews';
 import './App.css';
+
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -62,15 +65,28 @@ function App() {
           } />
           <Route path="/orders" element={
             <ProtectedRoute>
-              <Orders />
+              <Orders admin ={admin} />
             </ProtectedRoute>
           } />
+
+<Route path="/reviews" element={
+  <ProtectedRoute>
+    <AdminReviews />
+  </ProtectedRoute>
+} />
           <Route path="*" element={
             isAuthenticated ? <Navigate to="/" /> : <Navigate to="/login" />
           } />
           <Route path="/categories" element={
   <ProtectedRoute>
     <Categories />
+  </ProtectedRoute>
+} />
+
+
+<Route path="/settings" element={
+  <ProtectedRoute>
+    <Settings />
   </ProtectedRoute>
 } />
         </Routes>

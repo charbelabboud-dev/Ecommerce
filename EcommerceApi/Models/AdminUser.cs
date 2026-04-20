@@ -17,6 +17,8 @@ public class AdminUser
     public bool AdminUser_IsActive{get;set;} = true;
     public DateTime AdminUser_CreatedAt{get;set;} = DateTime.UtcNow;
     public DateTime AdminUser_UpdatedAt{get;set;} = DateTime.UtcNow;
+public decimal? AdminUser_ShippingFeeUSD { get; set; }
+public decimal? AdminUser_ShippingFeeLBP { get; set; }
 
 
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();

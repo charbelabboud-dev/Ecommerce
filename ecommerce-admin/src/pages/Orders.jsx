@@ -5,7 +5,7 @@ import { useToast } from '../contexts/ToastContexts';
 import OrderDetailModal from '../components/OrderDetailModal';
 import './Orders.css';
 
-function Orders() {
+function Orders({admin}) {
   const navigate = useNavigate();
   const { addToast } = useToast();
 
@@ -229,6 +229,7 @@ function Orders() {
       {showModal && (
         <OrderDetailModal
           order={selectedOrder}
+          admin={admin}
           onClose={handleCloseModal}
           onStatusUpdate={handleStatusUpdate}
         />

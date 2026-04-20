@@ -14,7 +14,6 @@ function Dashboard({ admin, onLogout }) {
     pendingOrders: 0,
   });
   
-  // Track if error already shown to prevent duplicate toasts
   const errorShown = useRef(false);
 
   useEffect(() => {
@@ -53,6 +52,10 @@ function Dashboard({ admin, onLogout }) {
     onLogout();
   };
 
+          const goToReviews = () => {
+  navigate('/reviews');
+};
+
   const goToProducts = () => {
     navigate('/products');
   };
@@ -65,13 +68,22 @@ function Dashboard({ admin, onLogout }) {
     navigate('/categories');
   };
 
+  const goToSettings = () => {
+    navigate('/settings');
+  };
+
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
         <h1>Welcome, {admin?.adminUser_StoreName || 'Admin'}!</h1>
-        <button onClick={handleLogout} className="logout-button">
-          Logout
-        </button>
+        <div className="header-buttons">
+          <button onClick={goToSettings} className="settings-button">
+            ⚙️ Shop Settings
+          </button>
+          <button onClick={handleLogout} className="logout-button">
+            Logout
+          </button>
+        </div>
       </div>
       
       <div className="stats-grid">
@@ -89,7 +101,6 @@ function Dashboard({ admin, onLogout }) {
         </div>
       </div>
       
-      {/* Low Stock Alert - OUTSIDE the stats grid */}
       <LowStockAlert />
       
       <div className="dashboard-nav">
@@ -102,6 +113,9 @@ function Dashboard({ admin, onLogout }) {
         <button onClick={goToCategories} className="nav-button">
           🏷️ Manage Categories
         </button>
+<button onClick={goToReviews} className="nav-button">
+  ⭐ Manage Reviews
+</button>
       </div>
     </div>
   );

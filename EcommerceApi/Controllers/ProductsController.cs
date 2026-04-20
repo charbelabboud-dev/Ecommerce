@@ -132,6 +132,7 @@ public async Task<IActionResult> UpdateStock(int id, [FromBody] int newStock)
         existingProduct.Product_IsFeatured = updatedProduct.Product_IsFeatured;
         existingProduct.Product_UpdatedAt = DateTime.UtcNow;
         existingProduct.Product_CategoryId = updatedProduct.Product_CategoryId;
+        existingProduct.Product_ShippingFee = updatedProduct.Product_ShippingFee;
 
         await _context.SaveChangesAsync();
 

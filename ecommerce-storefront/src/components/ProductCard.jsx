@@ -1,9 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import { addToWishlist, removeFromWishlist, checkInWishlist } from '../services/wishlistApi';
 
 function ProductCard({ product }) {
   const { addToCart } = useCart();
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [customerEmail, setCustomerEmail] = useState('');
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('customerEmail');
+    if (savedEmail) {
+      setCustomerEmail(savedEmail);
+      checkWishlistStatus(savedEmail);
+    }
+  }, [product.product_Id]);
+
+  const checkWishlistStatus = async (email) => {
+    const inWishlist = await checkInWishlist(email, product.product_Id);
+    setIsInWishlist(inWishlist);
+  };
+
+  const handleWishlistToggle = async () => {
+    const email = localStorage.getItem('customerEmail');
+    if (!email) {
+      const userEmail = prompt('Enter your email to save items to wishlist:');
+      if (userEmail) {
+        localStorage.setItem('customerEmail', userEmail);
+        setCustomerEmail(userEmail);
+        await addToWishlist(userEmail, product.product_Id);
+        setIsInWishlist(true);
+      }
+    } else {
+      if (isInWishlist) {
+        await removeFromWishlist(email, product.product_Id);
+        setIsInWishlist(false);
+      } else {
+        await addToWishlist(email, product.product_Id);
+        setIsInWishlist(true);
+      }
+    }
+  };
 
   const getPrice = () => {
     if (product.product_PriceUSD) {
@@ -27,6 +64,9 @@ function ProductCard({ product }) {
 
   return (
     <div className="product-card">
+      <div className="wishlist-icon" onClick={handleWishlistToggle}>
+        {isInWishlist ? '❤️' : '🤍'}
+      </div>
       <Link to={`/product/${product.product_Id}`} className="product-image-link">
         {getImageUrl() ? (
           <img src={getImageUrl()} alt={product.product_Name} className="product-image" />
@@ -39,7 +79,6 @@ function ProductCard({ product }) {
           <Link to={`/product/${product.product_Id}`}>{product.product_Name}</Link>
         </h3>
         
-        {/* Stock Alerts */}
         {isLowStock && (
           <span className="low-stock-badge">⚠️ Only {product.product_Stock} left!</span>
         )}
@@ -52,7 +91,14 @@ function ProductCard({ product }) {
         )}
         <p className="product-description">{product.product_ShortDescription}</p>
         <div className="product-footer">
-          <span className="product-price">{getPrice()}</span>
+          <div>
+    <span className="product-price">{getPrice()}</span>
+    {product.product_ShippingFee > 0 && (
+      <span className="product-shipping">
+        + ${product.product_ShippingFee.toFixed(2)} shipping
+      </span>
+    )}
+  </div>  
           <button 
             className="add-to-cart-btn" 
             onClick={() => addToCart(product)}

@@ -273,6 +273,32 @@
     width: 50px;
     height: 50px;
   }
+    .product-category-cell::before {
+    content: "Category";
+  }
+  /* Product Shipping Fee */
+.product-shipping-cell {
+  font-weight: 500;
+  color: #2c7a7d;
+}
+/* Product Shipping Fee */
+.product-shipping-cell {
+  font-weight: 500;
+  color: #2c7a7d;
+}
+
+/* Mobile view */
+@media (max-width: 767px) {
+  .product-shipping-cell::before {
+    content: "Shipping Fee";
+  }
+}
+/* Mobile view */
+@media (max-width: 767px) {
+  .product-shipping-cell::before {
+    content: "Shipping Fee";
+  }
+}
 }
 
 /* Desktop table cell styles */
@@ -397,11 +423,7 @@
 }
 
 /* Update mobile view labels */
-@media (max-width: 767px) {
-  .product-category-cell::before {
-    content: "Category";
-  }
-}
+
 .delete-btn:hover {
   background-color: #c62828;
   color: white;

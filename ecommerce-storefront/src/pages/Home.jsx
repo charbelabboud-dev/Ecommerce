@@ -1,14 +1,24 @@
-    import React, { useState, useEffect } from 'react';
-import API from '../services/api';
+import React, { useState, useEffect } from 'react';
+import API, { getStoreSettings } from '../services/api';
 import ProductCard from '../components/ProductCard';
+
 
 function Home() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [storeName, setStoreName] = useState('MyStore');
 
   useEffect(() => {
     fetchFeaturedProducts();
+    fetchStoreName();
   }, []);
+
+  const fetchStoreName = async () => {
+    const settings = await getStoreSettings();
+    if (settings && settings.adminUser_StoreName) {
+      setStoreName(settings.adminUser_StoreName);
+    }
+  };
 
   const fetchFeaturedProducts = async () => {
     try {
@@ -27,7 +37,7 @@ function Home() {
       {/* Hero Section */}
       <div className="hero">
         <div className="container">
-          <h1>Welcome to MyStore</h1>
+          <h1>Welcome to {storeName}</h1>
           <p>Discover amazing products at great prices</p>
           <a href="/products" className="shop-now-btn">Shop Now</a>
         </div>

@@ -181,6 +181,7 @@ function Products() {
                 <th>Category</th>
                 <th>Price</th>
                 <th>Stock</th>
+                <th>Shipping Fee</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -228,6 +229,15 @@ function Products() {
                     <td className="product-stock-cell" data-label="Stock">
                       {product.product_Stock}
                     </td>
+                    <td className="product-shipping-cell" data-label="Shipping Fee">
+  {product.product_ShippingFee !== null && product.product_ShippingFee !== undefined ? (
+    product.product_PriceUSD 
+      ? `$${product.product_ShippingFee.toFixed(2)}`
+      : `${product.product_ShippingFee.toFixed(2)} LBP`
+  ) : (
+    'Free'
+  )}
+</td>
                     <td className="product-status-cell" data-label="Status">
                       <span className={product.product_IsActive ? 'status-active' : 'status-inactive'}>
                         {product.product_IsActive ? 'Active' : 'Inactive'}

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using EcommerceApi.Models;
 
+
 namespace EcommerceApi.Data;
 
 public class AppDbContext : DbContext
@@ -16,7 +17,8 @@ public class AppDbContext : DbContext
     public DbSet<ProductImage> ProductImages { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
-
+    public DbSet<Review> Reviews { get; set; }
+public DbSet<Wishlist> Wishlists { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -56,6 +58,42 @@ public class AppDbContext : DbContext
                 .HasMaxLength(500);
         });
 
+// ========== Wishlist Configuration ==========
+modelBuilder.Entity<Wishlist>(entity =>
+{
+    entity.HasKey(e => e.Wishlist_Id);
+    
+    entity.Property(e => e.Wishlist_CustomerEmail)
+        .IsRequired()
+        .HasMaxLength(200);
+    
+    entity.HasOne(e => e.Product)
+        .WithMany()
+        .HasForeignKey(e => e.Wishlist_ProductId)
+        .OnDelete(DeleteBehavior.Cascade);
+}); 
+// ========== Review Configuration ==========
+modelBuilder.Entity<Review>(entity =>
+{
+    entity.HasKey(e => e.Review_Id);
+    
+    entity.Property(e => e.Review_CustomerName)
+        .IsRequired()
+        .HasMaxLength(200);
+    
+    entity.Property(e => e.Review_CustomerEmail)
+        .IsRequired()
+        .HasMaxLength(200);
+    
+    entity.Property(e => e.Review_Comment)
+        .IsRequired()
+        .HasMaxLength(1000);
+    
+    entity.HasOne(e => e.Product)
+        .WithMany(p => p.Reviews)
+        .HasForeignKey(e => e.Review_ProductId)
+        .OnDelete(DeleteBehavior.Cascade);
+});
         // ========== Category Configuration ==========
         modelBuilder.Entity<Category>(entity =>
         {

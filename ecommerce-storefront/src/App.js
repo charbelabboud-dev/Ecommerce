@@ -10,6 +10,9 @@ import Checkout from './pages/Checkout';
 import OrderSuccess from './pages/orderSuccess.jsx';
 import ProductDetail from './pages/ProductDetails.jsx';
 import OrderTracking from './pages/OrderTracking';
+import Wishlist from './pages/Wishlist';
+
+
 
 
 function App() {
@@ -25,6 +28,7 @@ function App() {
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/order-success" element={<OrderSuccess />} />
           <Route path="/track-order" element={<OrderTracking />} />
+          <Route path="/wishlist" element={<Wishlist />} />
         </Routes>
       </CartProvider>
     </Router>

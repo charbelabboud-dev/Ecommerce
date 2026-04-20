@@ -16,13 +16,42 @@ function Cart() {
     return 'N/A';
   };
 
-  const getItemTotal = (item) => {
+  const getShippingDisplay = (item) => {
+    const shipping = item.product_ShippingFee || 0;
+    if (shipping === 0) return 'Free';
+    const firstItem = cartItems[0];
+    if (firstItem?.product_PriceUSD) {
+      return `$${shipping.toFixed(2)}`;
+    }
+    return `${shipping.toFixed(2)} LBP`;
+  };
+
+  const getItemSubtotal = (item) => {
     const price = item.product_PriceUSD || item.product_PriceLBP || 0;
     return price * item.quantity;
   };
 
+  const getItemShipping = (item) => {
+    const shipping = item.product_ShippingFee || 0;
+    return shipping * item.quantity;
+  };
+
+  const getItemTotal = (item) => {
+    return getItemSubtotal(item) + getItemShipping(item);
+  };
+
+  const getTotalShipping = () => {
+    return cartItems.reduce((total, item) => {
+      const shipping = item.product_ShippingFee || 0;
+      return total + shipping * item.quantity;
+    }, 0);
+  };
+
+  const getGrandTotal = () => {
+    return getCartTotal() + getTotalShipping();
+  };
+
   const formatTotal = (total) => {
-    // Determine currency from first item
     const firstItem = cartItems[0];
     if (firstItem?.product_PriceUSD) {
       return `$${total.toFixed(2)}`;
@@ -56,6 +85,7 @@ function Cart() {
           <div className="cart-header">
             <span>Product</span>
             <span>Price</span>
+            <span>Shipping</span>
             <span>Quantity</span>
             <span>Total</span>
             <span></span>
@@ -78,19 +108,27 @@ function Cart() {
                 </div>
               </div>
               <div className="cart-item-price">{getPrice(item)}</div>
+              <div className="cart-item-shipping">{getShippingDisplay(item)}</div>
               <div className="cart-item-quantity">
-                <input
-                  type="number"
-                  min="1"
-                  value={item.quantity}
-                  onChange={(e) => updateQuantity(item.product_Id, parseInt(e.target.value))}
-                  className="quantity-input"
-                />
+                <button 
+                  className="qty-btn-decrease"
+                  onClick={() => updateQuantity(item.product_Id, item.quantity - 1)}
+                  disabled={item.quantity <= 1}
+                >
+                  −
+                </button>
+                <span className="quantity-display">{item.quantity}</span>
+                <button 
+                  className="qty-btn-increase"
+                  onClick={() => updateQuantity(item.product_Id, item.quantity + 1)}
+                >
+                  +
+                </button>
               </div>
               <div className="cart-item-total">{formatTotal(getItemTotal(item))}</div>
               <div className="cart-item-remove">
                 <button onClick={() => removeFromCart(item.product_Id)} className="remove-btn">
-                  Remove
+                  🗑️ Remove
                 </button>
               </div>
             </div>
@@ -104,11 +142,11 @@ function Cart() {
           </div>
           <div className="summary-row">
             <span>Shipping:</span>
-            <span>Calculated at checkout</span>
+            <span>{formatTotal(getTotalShipping())}</span>
           </div>
           <div className="summary-row total">
             <span>Total:</span>
-            <span>{formatTotal(getCartTotal())}</span>
+            <span>{formatTotal(getGrandTotal())}</span>
           </div>
           <button className="checkout-btn" onClick={handleCheckout}>
             Proceed to Checkout

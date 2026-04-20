@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import API from '../services/api';
-import { useToast } from '../contexts/ToastContexts.jsx';
+import { useToast } from '../contexts/ToastContexts';
 import './ProductFormModal.css';
 
 function ProductFormModal({ product, onSave, onClose, onRefresh }) {
@@ -16,13 +16,15 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
     product_SKU: '',
     product_IsActive: true,
     product_IsFeatured: false,
-    product_CategoryId: ''
+    product_CategoryId: '',
+    product_ShippingFee: ''
   });
 
   const [loading, setLoading] = useState(false);
   const [currency, setCurrency] = useState('USD');
   const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+
 
   // Fetch categories when modal opens
   useEffect(() => {
@@ -37,6 +39,14 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
     fetchCategories();
   }, []);
 
+    // Reset shipping fee when currency changes
+useEffect(() => {
+  setFormData(prev => ({
+    ...prev,
+    product_ShippingFee: ''
+  }));
+}, [currency]);
+
   // Populate form when editing
   useEffect(() => {
     if (product) {
@@ -50,7 +60,8 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
         product_SKU: product.product_SKU || '',
         product_IsActive: product.product_IsActive !== undefined ? product.product_IsActive : true,
         product_IsFeatured: product.product_IsFeatured || false,
-        product_CategoryId: product.product_CategoryId || ''
+        product_CategoryId: product.product_CategoryId || '',
+        product_ShippingFee: product.product_ShippingFee || ''
       });
       
       if (product.product_PriceUSD && product.product_PriceUSD > 0) {
@@ -71,7 +82,8 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
         product_SKU: '',
         product_IsActive: true,
         product_IsFeatured: false,
-        product_CategoryId: ''
+        product_CategoryId: '',
+        product_ShippingFee: ''
       });
       setCurrency('USD');
       setImageFile(null);
@@ -137,7 +149,6 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
     
     const submitData = {
       product_Name: formData.product_Name,
-       product_CategoryId: formData.product_CategoryId ? parseInt(formData.product_CategoryId) : null,
       product_Description: formData.product_Description || null,
       product_ShortDescription: formData.product_ShortDescription || null,
       product_PriceUSD: currency === 'USD' ? parseFloat(formData.product_PriceUSD) : null,
@@ -148,7 +159,8 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
       product_SKU: formData.product_SKU || null,
       product_IsActive: formData.product_IsActive,
       product_IsFeatured: formData.product_IsFeatured,
-      product_CategoryId: formData.product_CategoryId ? parseInt(formData.product_CategoryId) : null
+      product_CategoryId: formData.product_CategoryId ? parseInt(formData.product_CategoryId) : null,
+      product_ShippingFee: formData.product_ShippingFee ? parseFloat(formData.product_ShippingFee) : null
     };
     
     if (product) {
@@ -306,6 +318,19 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
                 placeholder="Product code"
               />
             </div>
+          </div>
+          
+          <div className="form-group">
+            <label>Shipping Fee</label>
+            <input
+              type="number"
+              name="product_ShippingFee"
+              value={formData.product_ShippingFee}
+              onChange={handleChange}
+              step="0.01"
+              placeholder="0.00"
+            />
+            <small>Leave empty for free shipping</small>
           </div>
           
           <div className="form-group">
