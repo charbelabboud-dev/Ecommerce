@@ -10,7 +10,8 @@ const API = axios.create({
 // Add token to every request automatically
 API.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    // Check for customer token first, then admin token
+    const token = localStorage.getItem('customerToken') || localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

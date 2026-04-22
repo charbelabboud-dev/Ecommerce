@@ -19,6 +19,8 @@ body {
 /* ============================================ */
 /* NAVBAR */
 /* ============================================ */
+/* Navbar */
+/* Navbar */
 .navbar {
   background-color: #1e3a5f;
   padding: 12px 0;
@@ -32,15 +34,38 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
+/* Left - Logo */
 .navbar-brand {
   font-size: 22px;
   font-weight: 700;
   color: white;
   text-decoration: none;
   white-space: nowrap;
+}
+
+/* Center - Welcome Text */
+.nav-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.welcome-text {
+  color: #e2e8f0;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* Right - Navigation + Buttons + Cart */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .nav-links {
@@ -61,6 +86,39 @@ body {
   opacity: 0.8;
 }
 
+.login-link {
+  color: white;
+  text-decoration: none;
+  font-size: 14px;
+  padding: 6px 14px;
+  border: 1px solid white;
+  border-radius: 6px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.login-link:hover {
+  background-color: white;
+  color: #1e3a5f;
+}
+
+.logout-btn {
+  background: none;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.logout-btn:hover {
+  background-color: #ef4444;
+  color: white;
+}
+
 .cart-icon {
   position: relative;
   font-size: 22px;
@@ -68,13 +126,14 @@ body {
   color: white;
   display: flex;
   align-items: center;
+  white-space: nowrap;
 }
 
 .cart-count {
   position: absolute;
   top: -10px;
   right: -12px;
-  background-color: #e74c3c;
+  background-color: #ef4444;
   color: white;
   font-size: 11px;
   font-weight: bold;
@@ -84,6 +143,28 @@ body {
   text-align: center;
 }
 
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .navbar .container {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .nav-center {
+    position: static;
+    transform: none;
+  }
+  
+  .nav-right {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .nav-links {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
 /* ============================================ */
 /* HERO SECTION */
 /* ============================================ */
@@ -1548,11 +1629,17 @@ body {
   }
   
   .nav-links {
-    gap: 25px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
   }
   
   .nav-link {
     font-size: 14px;
+  }
+  
+  .welcome-text, .logout-nav-btn {
+    font-size: 12px;
   }
   
   .navbar-brand {

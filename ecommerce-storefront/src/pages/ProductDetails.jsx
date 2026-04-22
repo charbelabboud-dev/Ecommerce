@@ -132,29 +132,31 @@ function ProductDetail() {
     }
   };
 
-  const handleWishlistToggle = async () => {
-    const email = localStorage.getItem('customerEmail');
-    if (!email) {
-      const userEmail = prompt('Enter your email to save items to wishlist:');
-      if (userEmail) {
-        localStorage.setItem('customerEmail', userEmail);
-        setCustomerEmail(userEmail);
-        await addToWishlist(userEmail, product.product_Id);
-        setIsInWishlist(true);
-        alert('Added to wishlist!');
-      }
-    } else {
-      if (isInWishlist) {
-        await removeFromWishlist(email, product.product_Id);
-        setIsInWishlist(false);
-        alert('Removed from wishlist');
-      } else {
-        await addToWishlist(email, product.product_Id);
-        setIsInWishlist(true);
-        alert('Added to wishlist!');
-      }
-    }
-  };
+const handleWishlistToggle = async () => {
+  const token = localStorage.getItem('customerToken');
+  if (!token) {
+    alert('Please login to add items to wishlist');
+    navigate('/login');
+    return;
+  }
+  
+  const email = localStorage.getItem('customerEmail');
+  if (!email) {
+    alert('Please login to add items to wishlist');
+    navigate('/login');
+    return;
+  }
+  
+  if (isInWishlist) {
+    await removeFromWishlist(email, product.product_Id);
+    setIsInWishlist(false);
+    alert('Removed from wishlist');
+  } else {
+    await addToWishlist(email, product.product_Id);
+    setIsInWishlist(true);
+    alert('Added to wishlist!');
+  }
+};
 
   const getPrice = () => {
     if (product?.product_PriceUSD) {
@@ -185,9 +187,15 @@ function ProductDetail() {
     return discount;
   };
 
-  const handleAddToCart = () => {
-    addToCart(product, quantity);
-  };
+const handleAddToCart = () => {
+  const token = localStorage.getItem('customerToken');
+  if (!token) {
+    alert('Please login to add items to cart');
+    navigate('/login');
+    return;
+  }
+  addToCart(product, quantity);
+};
 
   const handleQuantityChange = (e) => {
     let val = parseInt(e.target.value);

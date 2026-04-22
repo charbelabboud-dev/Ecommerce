@@ -11,6 +11,10 @@ import OrderSuccess from './pages/orderSuccess.jsx';
 import ProductDetail from './pages/ProductDetails.jsx';
 import OrderTracking from './pages/OrderTracking';
 import Wishlist from './pages/Wishlist';
+import Register from './pages/Register';
+import VerifyOtp from './pages/VerifyOtp';
+import CustomerLogin from './pages/CustomerLogin';
+          import OrderHistory from './pages/OrderHistory';
 
 
 
@@ -29,6 +33,10 @@ function App() {
           <Route path="/order-success" element={<OrderSuccess />} />
           <Route path="/track-order" element={<OrderTracking />} />
           <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/verify-otp" element={<VerifyOtp />} />
+          <Route path="/login" element={<CustomerLogin />} />
+<Route path="/orders" element={<OrderHistory />} />
         </Routes>
       </CartProvider>
     </Router>

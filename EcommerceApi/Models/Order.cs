@@ -26,6 +26,8 @@ public class Order
     public string? Order_AdminNotes { get; set; }
     public DateTime Order_CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime Order_UpdatedAt { get; set; } = DateTime.UtcNow;
+    public int? Order_CustomerId { get; set; }
+public virtual Customer? Customer { get; set; }
 
     public virtual AdminUser? AdminUser { get; set; }
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();

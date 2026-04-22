@@ -17,12 +17,18 @@ public class OrdersController : ControllerBase
         _context = context;
     }
 
-    // POST: api/orders (Customer checkout)
-    [HttpPost]
+
 // POST: api/orders (Customer checkout)
 [HttpPost]
 public async Task<ActionResult<Order>> CreateOrder(Order order)
 {
+    // Get customer ID if logged in
+    var customerIdClaim = User.FindFirst("CustomerId");
+    if (customerIdClaim != null)
+    {
+        order.Order_CustomerId = int.Parse(customerIdClaim.Value);
+    }
+    
     // Generate a unique order number
     order.Order_Number = GenerateOrderNumber();
     
@@ -43,7 +49,7 @@ public async Task<ActionResult<Order>> CreateOrder(Order order)
         CalculateOrderTotals(order);
     }
 
-    // ========== DEDUCT STOCK FOR EACH ITEM ==========
+    // Deduct stock
     foreach (var item in order.OrderItems)
     {
         var product = await _context.Products.FindAsync(item.OrderItem_ProductId);
@@ -52,13 +58,11 @@ public async Task<ActionResult<Order>> CreateOrder(Order order)
             return BadRequest($"Product with ID {item.OrderItem_ProductId} not found.");
         }
         
-        // Check if enough stock is available
         if (product.Product_Stock < item.OrderItem_Quantity)
         {
             return BadRequest($"Insufficient stock for product: {product.Product_Name}. Available: {product.Product_Stock}, Requested: {item.OrderItem_Quantity}");
         }
         
-        // Deduct stock
         product.Product_Stock -= item.OrderItem_Quantity;
         product.Product_UpdatedAt = DateTime.UtcNow;
     }
@@ -70,6 +74,27 @@ public async Task<ActionResult<Order>> CreateOrder(Order order)
 }
 
 
+// GET: api/orders/customer
+[Authorize]
+[HttpGet("customer")]
+public async Task<ActionResult<IEnumerable<Order>>> GetCustomerOrders()
+{
+    var customerIdClaim = User.FindFirst("CustomerId");
+    if (customerIdClaim == null)
+    {
+        return Unauthorized(new { message = "Please login to view your orders" });
+    }
+
+    var customerId = int.Parse(customerIdClaim.Value);
+
+    var orders = await _context.Orders
+        .Where(o => o.Order_CustomerId == customerId)
+        .Include(o => o.OrderItems)
+        .OrderByDescending(o => o.Order_CreatedAt)
+        .ToListAsync();
+
+    return Ok(orders);
+}
 [HttpGet("lookup")]
 public async Task<ActionResult<IEnumerable<Order>>> LookupOrders([FromQuery] string? phone, [FromQuery] string? email)
 {

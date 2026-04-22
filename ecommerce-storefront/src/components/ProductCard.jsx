@@ -1,44 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { addToWishlist, removeFromWishlist, checkInWishlist } from '../services/wishlistApi';
 
 function ProductCard({ product }) {
   const { addToCart } = useCart();
   const [isInWishlist, setIsInWishlist] = useState(false);
-  const [customerEmail, setCustomerEmail] = useState('');
+  const navigate = useNavigate();
 
+  // Check wishlist status when component mounts or product changes
   useEffect(() => {
-    const savedEmail = localStorage.getItem('customerEmail');
-    if (savedEmail) {
-      setCustomerEmail(savedEmail);
-      checkWishlistStatus(savedEmail);
+    const token = localStorage.getItem('customerToken');
+    if (token) {
+      checkWishlistStatus();
     }
   }, [product.product_Id]);
 
-  const checkWishlistStatus = async (email) => {
-    const inWishlist = await checkInWishlist(email, product.product_Id);
+  const checkWishlistStatus = async () => {
+    const inWishlist = await checkInWishlist(product.product_Id);
     setIsInWishlist(inWishlist);
   };
 
+  const handleAddToCart = () => {
+    const token = localStorage.getItem('customerToken');
+    if (!token) {
+      alert('Please login to add items to cart');
+      navigate('/login');
+      return;
+    }
+    addToCart(product, 1);
+  };
+
   const handleWishlistToggle = async () => {
-    const email = localStorage.getItem('customerEmail');
-    if (!email) {
-      const userEmail = prompt('Enter your email to save items to wishlist:');
-      if (userEmail) {
-        localStorage.setItem('customerEmail', userEmail);
-        setCustomerEmail(userEmail);
-        await addToWishlist(userEmail, product.product_Id);
-        setIsInWishlist(true);
-      }
+    const token = localStorage.getItem('customerToken');
+    if (!token) {
+      alert('Please login to add items to wishlist');
+      navigate('/login');
+      return;
+    }
+    
+    if (isInWishlist) {
+      await removeFromWishlist(product.product_Id);
+      setIsInWishlist(false);
     } else {
-      if (isInWishlist) {
-        await removeFromWishlist(email, product.product_Id);
-        setIsInWishlist(false);
-      } else {
-        await addToWishlist(email, product.product_Id);
-        setIsInWishlist(true);
-      }
+      await addToWishlist(product.product_Id);
+      setIsInWishlist(true);
     }
   };
 
@@ -92,16 +98,16 @@ function ProductCard({ product }) {
         <p className="product-description">{product.product_ShortDescription}</p>
         <div className="product-footer">
           <div>
-    <span className="product-price">{getPrice()}</span>
-    {product.product_ShippingFee > 0 && (
-      <span className="product-shipping">
-        + ${product.product_ShippingFee.toFixed(2)} shipping
-      </span>
-    )}
-  </div>  
+            <span className="product-price">{getPrice()}</span>
+            {product.product_ShippingFee > 0 && (
+              <span className="product-shipping">
+                + ${product.product_ShippingFee.toFixed(2)} shipping
+              </span>
+            )}
+          </div>  
           <button 
             className="add-to-cart-btn" 
-            onClick={() => addToCart(product)}
+            onClick={handleAddToCart}
             disabled={isOutOfStock}
             style={isOutOfStock ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
           >

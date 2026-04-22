@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using EcommerceApi.Data;
 using EcommerceApi.Models;
+using System.Security.Claims;
 
 namespace EcommerceApi.Controllers;
 
@@ -16,26 +18,44 @@ public class WishlistController : ControllerBase
         _context = context;
     }
 
-    // GET: api/wishlist/{email}
-    [HttpGet("{email}")]
-    public async Task<ActionResult<IEnumerable<Wishlist>>> GetWishlist(string email)
+    // GET: api/wishlist
+    [Authorize]
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Wishlist>>> GetWishlist()
     {
+        var customerIdClaim = User.FindFirst("CustomerId");
+        if (customerIdClaim == null)
+        {
+            return Unauthorized();
+        }
+
+        var customerId = int.Parse(customerIdClaim.Value);
+
         var wishlist = await _context.Wishlists
             .Include(w => w.Product)
             .ThenInclude(p => p.ProductImages)
-            .Where(w => w.Wishlist_CustomerEmail == email)
+            .Where(w => w.Wishlist_CustomerId == customerId)
             .ToListAsync();
 
         return Ok(wishlist);
     }
 
     // POST: api/wishlist
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult<Wishlist>> AddToWishlist([FromBody] WishlistRequest request)
     {
+        var customerIdClaim = User.FindFirst("CustomerId");
+        if (customerIdClaim == null)
+        {
+            return Unauthorized();
+        }
+
+        var customerId = int.Parse(customerIdClaim.Value);
+
         // Check if already exists
         var existing = await _context.Wishlists
-            .FirstOrDefaultAsync(w => w.Wishlist_CustomerEmail == request.Email && w.Wishlist_ProductId == request.ProductId);
+            .FirstOrDefaultAsync(w => w.Wishlist_CustomerId == customerId && w.Wishlist_ProductId == request.ProductId);
 
         if (existing != null)
         {
@@ -44,7 +64,7 @@ public class WishlistController : ControllerBase
 
         var wishlist = new Wishlist
         {
-            Wishlist_CustomerEmail = request.Email,
+            Wishlist_CustomerId = customerId,
             Wishlist_ProductId = request.ProductId,
             Wishlist_CreatedAt = DateTime.UtcNow
         };
@@ -55,12 +75,21 @@ public class WishlistController : ControllerBase
         return Ok(new { message = "Added to wishlist" });
     }
 
-    // DELETE: api/wishlist/{email}/{productId}
-    [HttpDelete("{email}/{productId}")]
-    public async Task<IActionResult> RemoveFromWishlist(string email, int productId)
+    // DELETE: api/wishlist/{productId}
+    [Authorize]
+    [HttpDelete("{productId}")]
+    public async Task<IActionResult> RemoveFromWishlist(int productId)
     {
+        var customerIdClaim = User.FindFirst("CustomerId");
+        if (customerIdClaim == null)
+        {
+            return Unauthorized();
+        }
+
+        var customerId = int.Parse(customerIdClaim.Value);
+
         var wishlist = await _context.Wishlists
-            .FirstOrDefaultAsync(w => w.Wishlist_CustomerEmail == email && w.Wishlist_ProductId == productId);
+            .FirstOrDefaultAsync(w => w.Wishlist_CustomerId == customerId && w.Wishlist_ProductId == productId);
 
         if (wishlist == null)
         {
@@ -76,6 +105,5 @@ public class WishlistController : ControllerBase
 
 public class WishlistRequest
 {
-    public string Email { get; set; } = string.Empty;
     public int ProductId { get; set; }
 }

@@ -1,51 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { getWishlist, removeFromWishlist } from '../services/wishlistApi';
-import { addToCart } from '../services/api';
 import './Wishlist.css';
 
 function Wishlist() {
+  const navigate = useNavigate();
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [customerEmail, setCustomerEmail] = useState('');
-  const [showEmailInput, setShowEmailInput] = useState(true);
   const { addToCart: addToCartContext } = useCart();
 
   useEffect(() => {
-    const savedEmail = localStorage.getItem('customerEmail');
-    if (savedEmail) {
-      setCustomerEmail(savedEmail);
-      fetchWishlist(savedEmail);
-      setShowEmailInput(false);
+    const token = localStorage.getItem('customerToken');
+    if (!token) {
+      alert('Please login to view your wishlist');
+      navigate('/login');
+      return;
     }
-  }, []);
+    fetchWishlist();
+  }, [navigate]);
 
-  const fetchWishlist = async (email) => {
+  const fetchWishlist = async () => {
     setLoading(true);
-    const items = await getWishlist(email);
+    const items = await getWishlist();
     setWishlistItems(items);
     setLoading(false);
   };
 
-  const handleEmailSubmit = (e) => {
-    e.preventDefault();
-    if (customerEmail.trim()) {
-      localStorage.setItem('customerEmail', customerEmail);
-      fetchWishlist(customerEmail);
-      setShowEmailInput(false);
-    }
-  };
-
   const handleRemove = async (productId) => {
-    await removeFromWishlist(customerEmail, productId);
-    fetchWishlist(customerEmail);
+    await removeFromWishlist(productId);
+    fetchWishlist();
   };
 
   const handleAddToCart = async (product) => {
+    if (product.product_Stock === 0) {
+      alert('This product is out of stock and cannot be added to cart');
+      return;
+    }
     addToCartContext(product, 1);
-    // Optionally remove from wishlist after adding to cart
-    // await handleRemove(product.product_Id);
+    alert('Added to cart!');
   };
 
   const getPrice = (product) => {
@@ -64,27 +57,6 @@ function Wishlist() {
     }
     return null;
   };
-
-  if (showEmailInput) {
-    return (
-      <div className="container">
-        <div className="wishlist-email-container">
-          <h2>My Wishlist</h2>
-          <p>Enter your email to view your saved items</p>
-          <form onSubmit={handleEmailSubmit} className="wishlist-email-form">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              value={customerEmail}
-              onChange={(e) => setCustomerEmail(e.target.value)}
-              required
-            />
-            <button type="submit">View Wishlist</button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return <div className="container loading">Loading your wishlist...</div>;
@@ -108,16 +80,6 @@ function Wishlist() {
     <div className="container">
       <div className="wishlist-header">
         <h1>My Wishlist</h1>
-        <button 
-          className="change-email-btn"
-          onClick={() => {
-            localStorage.removeItem('customerEmail');
-            setShowEmailInput(true);
-            setCustomerEmail('');
-          }}
-        >
-          Change Email
-        </button>
       </div>
 
       <div className="wishlist-grid">
@@ -140,13 +102,28 @@ function Wishlist() {
                   {item.product.product_Name}
                 </Link>
               </h3>
+              
+              {/* Stock Status - Below Title */}
+              <div className="wishlist-stock-status">
+                {item.product.product_Stock === 0 ? (
+                  <span className="out-of-stock">Out of Stock</span>
+                ) : item.product.product_Stock <= 5 ? (
+                  <span className="low-stock">⚠️ Only {item.product.product_Stock} left!</span>
+                ) : (
+                  <span className="in-stock">In Stock</span>
+                )}
+              </div>
+              
               <p className="wishlist-price">{getPrice(item.product)}</p>
+              
               <div className="wishlist-actions">
                 <button 
                   className="add-to-cart-wishlist"
                   onClick={() => handleAddToCart(item.product)}
+                  disabled={item.product.product_Stock === 0}
+                  style={item.product.product_Stock === 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                 >
-                  Add to Cart
+                  {item.product.product_Stock === 0 ? 'Out of Stock' : 'Add to Cart'}
                 </button>
                 <button 
                   className="remove-from-wishlist"

@@ -6,21 +6,42 @@ export const useCart = () => useContext(CartContext);
 
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState([]);
+  const [customerId, setCustomerId] = useState(null);
 
-  // Load cart from localStorage on startup
+  // Load cart from localStorage when customer logs in
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      setCartItems(JSON.parse(savedCart));
+    const token = localStorage.getItem('customerToken');
+    const customer = localStorage.getItem('customer');
+    
+    if (token && customer) {
+      const customerData = JSON.parse(customer);
+      setCustomerId(customerData.customer_Id);
+      
+      // Load cart for this customer
+      const savedCart = localStorage.getItem(`cart_${customerData.customer_Id}`);
+      if (savedCart) {
+        setCartItems(JSON.parse(savedCart));
+      } else {
+        setCartItems([]);
+      }
+    } else {
+      // Not logged in, clear cart
+      setCartItems([]);
+      setCustomerId(null);
     }
   }, []);
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cartItems));
-  }, [cartItems]);
+    if (customerId) {
+      localStorage.setItem(`cart_${customerId}`, JSON.stringify(cartItems));
+    }
+  }, [cartItems, customerId]);
 
   const addToCart = (product, quantity = 1) => {
+    const token = localStorage.getItem('customerToken');
+    if (!token) return;
+
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item.product_Id === product.product_Id);
       

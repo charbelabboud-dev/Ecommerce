@@ -59,9 +59,15 @@ function Cart() {
     return `${total.toFixed(2)} LBP`;
   };
 
-  const handleCheckout = () => {
-    navigate('/checkout');
-  };
+const handleCheckout = () => {
+  const token = localStorage.getItem('customerToken');
+  if (!token) {
+    alert('Please login to proceed to checkout');
+    navigate('/login');
+    return;
+  }
+  navigate('/checkout');
+};
 
   if (cartItems.length === 0) {
     return (

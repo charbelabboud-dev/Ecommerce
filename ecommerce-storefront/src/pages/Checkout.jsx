@@ -15,6 +15,14 @@ function Checkout() {
     notes: ''
   });
 
+    useEffect(() => {
+    const token = localStorage.getItem('customerToken');
+    if (!token) {
+      alert('Please login to proceed to checkout');
+      navigate('/login');
+    }
+  }, [navigate]);
+  
   const getCurrency = () => {
     const firstItem = cartItems[0];
     return firstItem?.product_PriceUSD ? 'USD' : 'LBP';
