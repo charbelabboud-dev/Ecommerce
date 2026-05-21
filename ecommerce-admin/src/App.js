@@ -9,6 +9,7 @@ import Categories from './pages/Categories';
 import Settings from './pages/Settings';
 import AdminReviews from './pages/AdminReviews';
 import './App.css';
+import { ConfirmProvider } from './contexts/ConfirmContext';
 
 
 function App() {
@@ -48,6 +49,7 @@ function App() {
 
   return (
     <ToastProvider>
+      <ConfirmProvider>
       <Router>
         <Routes>
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
@@ -91,6 +93,7 @@ function App() {
 } />
         </Routes>
       </Router>
+      </ConfirmProvider>
     </ToastProvider>
   );
 }

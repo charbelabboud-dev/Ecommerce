@@ -22,59 +22,56 @@ public class AuthController : ControllerBase
         _configuration = configuration;
     }
 
-    // POST: api/auth/login
-[HttpPost("login")]
-public async Task<ActionResult<object>> Login([FromBody] LoginRequest request)
-{
-    var admin = await _context.AdminUsers
-        .FirstOrDefaultAsync(a => a.AdminUser_Username == request.Username);
-
-    if (admin == null)
+    [HttpPost("login")]
+    public async Task<ActionResult<object>> Login([FromBody] LoginRequest request)
     {
-        return Unauthorized(new { message = "Invalid username or password." });
-    }
+        var admin = await _context.AdminUsers
+            .FirstOrDefaultAsync(a => a.AdminUser_Username == request.Username);
 
-    // Verify password (V1: plain text comparison)
-    if (request.Password != "admin123")
-    {
-        return Unauthorized(new { message = "Invalid username or password." });
-    }
-
-    // Generate JWT token
-    var token = GenerateJwtToken(admin);
-
-    return Ok(new
-    {
-        message = "Login successful",
-        token = token,
-        admin = new
+        if (admin == null)
         {
-            admin.AdminUser_Id,
-            admin.AdminUser_Username,
-            admin.AdminUser_Email,
-            admin.AdminUser_StoreName,
-            admin.AdminUser_StorePhone,     // ← ADD THIS
-            admin.AdminUser_StoreAddress,   // ← ADD THIS
-            admin.AdminUser_StoreLogo       // ← ADD THIS
+            return Unauthorized(new { message = "Invalid username or password." });
         }
-    });
-}
-    // POST: api/auth/register (Create first admin - one time use)
+
+        if (!BCrypt.Net.BCrypt.Verify(request.Password, admin.AdminUser_PasswordHash))
+        {
+            return Unauthorized(new { message = "Invalid username or password." });
+        }
+
+        var token = GenerateJwtToken(admin);  // ← REMOVED the extra 'a'
+
+        return Ok(new
+        {
+            message = "Login successful",
+            token = token,
+            admin = new
+            {
+                admin.AdminUser_Id,
+                admin.AdminUser_Username,
+                admin.AdminUser_Email,
+                admin.AdminUser_StoreName,
+                admin.AdminUser_StorePhone,
+                admin.AdminUser_StoreAddress,
+                admin.AdminUser_StoreLogo
+            }
+        });
+    }
+
     [HttpPost("register")]
     public async Task<ActionResult<object>> Register([FromBody] RegisterRequest request)
     {
-        // Check if any admin already exists
         var anyAdmin = await _context.AdminUsers.AnyAsync();
         if (anyAdmin)
         {
             return BadRequest(new { message = "Admin already exists. Registration disabled." });
         }
 
-        // Create new admin
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
         var admin = new AdminUser
         {
             AdminUser_Username = request.Username,
-            AdminUser_PasswordHash = request.Password, // V1: plain text - will hash later
+            AdminUser_PasswordHash = passwordHash,
             AdminUser_Email = request.Email,
             AdminUser_StoreName = request.StoreName,
             AdminUser_StorePhone = request.StorePhone,
@@ -100,7 +97,6 @@ public async Task<ActionResult<object>> Login([FromBody] LoginRequest request)
         });
     }
 
-    // Helper: Generate JWT token
     private string GenerateJwtToken(AdminUser admin)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
@@ -128,7 +124,6 @@ public async Task<ActionResult<object>> Login([FromBody] LoginRequest request)
     }
 }
 
-// Request DTOs (Data Transfer Objects)
 public class LoginRequest
 {
     public string Username { get; set; } = string.Empty;

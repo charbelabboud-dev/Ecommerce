@@ -4,10 +4,12 @@ import API from '../services/api';
 import { useToast } from '../contexts/ToastContexts';
 import ProductFormModal from '../components/ProductFormModal';
 import './Products.css';
+import { useConfirm } from '../contexts/ConfirmContext';
 
 function Products() {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { confirm } = useConfirm();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -66,18 +68,19 @@ function Products() {
 
   const filteredProducts = getFilteredProducts();
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this product?")) {
-      try {
-        await API.delete(`/products/${id}`);
-        addToast("Product deleted successfully", "success");
-        fetchProducts();
-      } catch (error) {
-        console.error("Error deleting product:", error);
-        addToast("Failed to delete product", "error");
-      }
-    }
-  };
+const handleDelete = async (id, productName) => {
+  const userConfirmed = await confirm(`Are you sure you want to delete "${productName}"?`);
+  if (!userConfirmed) return;
+
+  try {
+    await API.delete(`/products/${id}`);
+    addToast("Product deleted successfully", "success");
+    fetchProducts();
+  } catch (error) {
+    const message = error.response?.data?.message || "Failed to delete product";
+    addToast(message, "error");
+  }
+};
 
   const handleAdd = () => {
     setEditingProduct(null);
@@ -176,7 +179,7 @@ function Products() {
           <table className="products-table">
             <thead>
               <tr>
-                <th>Image</th>
+                {/* <th>Image</th> */}
                 <th>Name</th>
                 <th>Category</th>
                 <th>Price</th>
@@ -198,7 +201,7 @@ function Products() {
               ) : (
                 filteredProducts.map((product) => (
                   <tr key={product.product_Id}>
-                    <td className="product-image-cell" data-label="Image">
+                    <td className="product-image-cell">
                       {product.productImages && product.productImages.length > 0 ? (
                         <img 
                           src={`http://localhost:5147${product.productImages[0].productImage_ImageUrl}`} 
@@ -245,7 +248,7 @@ function Products() {
                     </td>
                     <td className="product-actions-cell" data-label="Actions">
                       <button className="edit-btn" onClick={() => handleEdit(product)}>Edit</button>
-                      <button className="delete-btn" onClick={() => handleDelete(product.product_Id)}>Delete</button>
+                      <button className="delete-btn" onClick={() => handleDelete(product.product_Id, product.product_Name)}>Delete</button>
                     </td>
                   </tr>
                 ))

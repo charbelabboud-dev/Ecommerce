@@ -217,13 +217,16 @@
   }
   
   .product-image-cell {
-    justify-content: flex-start;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
   }
   
-  .product-image-cell::before {
-    content: "Image";
+  /* .product-image-cell::before {
+    content: none;
   }
-  
+   */
   .product-name-cell::before {
     content: "Name";
   }

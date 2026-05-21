@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import { useToast } from '../contexts/ToastContexts';
 import './Categories.css';
+import { useConfirm } from '../contexts/ConfirmContext';
+
 
 function Categories() {
   const navigate = useNavigate();
   const { addToast } = useToast();
-  
+  const { confirm } = useConfirm();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -77,7 +79,11 @@ function Categories() {
 
     try {
       if (editingCategory) {
-        await API.put(`/categories/${editingCategory.category_Id}`, formData);
+          const updateData = {
+          ...formData,
+          category_Id: editingCategory.category_Id 
+        };
+        await API.put(`/categories/${editingCategory.category_Id}`, updateData);
         addToast('Category updated successfully', 'success');
       } else {
         await API.post('/categories', formData);
@@ -93,18 +99,18 @@ function Categories() {
     }
   };
 
-  const handleDelete = async (id, name) => {
-    if (window.confirm(`Are you sure you want to delete category "${name}"?`)) {
-      try {
-        await API.delete(`/categories/${id}`);
-        addToast('Category deleted successfully', 'success');
-        fetchCategories();
-      } catch (error) {
-        console.error('Error deleting category:', error);
-        addToast(error.response?.data || 'Failed to delete category', 'error');
-      }
-    }
-  };
+const handleDelete = async (id, name) => {
+  const userConfirmed = await confirm(`Are you sure you want to delete category "${name}"?`);
+  if (!userConfirmed) return;
+
+  try {
+    await API.delete(`/categories/${id}`);
+    addToast('Category deleted successfully', 'success');
+    fetchCategories();
+  } catch (error) {
+    addToast(error.response?.data || 'Failed to delete category', 'error');
+  }
+};
 
   const goBack = () => {
     navigate('/');
@@ -140,36 +146,28 @@ function Categories() {
               </tr>
             </thead>
             <tbody>
-              {categories.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="no-data">
-                    No categories found. Click "Add Category" to create one.
-                  </td>
-                </tr>
-              ) : (
-                categories.map((category) => (
-                  <tr key={category.category_Id}>
-                    <td data-label="Name">{category.category_Name}</td>
-                    <td data-label="Slug">{category.category_Slug}</td>
-                    <td data-label="Description">{category.category_Description || '-'}</td>
-                    <td data-label="Display Order">{category.category_DisplayOrder}</td>
-                    <td data-label="Status">
-                      <span className={category.category_IsActive ? 'status-active' : 'status-inactive'}>
-                        {category.category_IsActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td data-label="Actions">
-                      <button className="edit-btn" onClick={() => handleOpenModal(category)}>
-                        Edit
-                      </button>
-                      <button className="delete-btn" onClick={() => handleDelete(category.category_Id, category.category_Name)}>
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
+  {categories.length === 0 ? (
+    <tr><td colSpan="6" className="no-data">No categories found.</td></tr>
+  ) : (
+    categories.map((category) => (
+      <tr key={category.category_Id}>
+        <td data-label="Name"><span className="cell-value">{category.category_Name}</span></td>
+        <td data-label="Slug"><span className="cell-value">{category.category_Slug}</span></td>
+        <td data-label="Description"><span className="cell-value">{category.category_Description || '-'}</span></td>
+        <td data-label="Display Order"><span className="cell-value">{category.category_DisplayOrder}</span></td>
+        <td data-label="Status">
+          <span className={`status-badge ${category.category_IsActive ? 'status-active' : 'status-inactive'}`}>
+            {category.category_IsActive ? 'Active' : 'Inactive'}
+          </span>
+        </td>
+        <td data-label="Actions">
+          <button className="edit-btn" onClick={() => handleOpenModal(category)}>Edit</button>
+          <button className="delete-btn" onClick={() => handleDelete(category.category_Id, category.category_Name)}>Delete</button>
+        </td>
+      </tr>
+    ))
+  )}
+</tbody>
           </table>
         </div>
       )}

@@ -14,17 +14,18 @@ import Wishlist from './pages/Wishlist';
 import Register from './pages/Register';
 import VerifyOtp from './pages/VerifyOtp';
 import CustomerLogin from './pages/CustomerLogin';
-          import OrderHistory from './pages/OrderHistory';
-
+import OrderHistory from './pages/OrderHistory';
+import { ToastProvider } from './components/ToastContext.jsx';
 
 
 
 function App() {
   return (
     <Router>
-      <CartProvider>
-        <Navbar />
-        <Routes>
+      <ToastProvider>
+        <CartProvider>
+          <Navbar />
+          <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/products" element={<Products />} />
           <Route path="/cart" element={<Cart />} />
@@ -36,9 +37,10 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
           <Route path="/login" element={<CustomerLogin />} />
-<Route path="/orders" element={<OrderHistory />} />
+          <Route path="/orders" element={<OrderHistory />} />
         </Routes>
-      </CartProvider>
+        </CartProvider>
+      </ToastProvider>
     </Router>
   );
 }

@@ -4,6 +4,7 @@ using EcommerceApi.Data;
 using EcommerceApi.Models;
 using Microsoft.AspNetCore.Authorization; 
 using System.Security.Claims;
+using Microsoft.Data.SqlClient;
 
 namespace EcommerceApi.Controllers;
 
@@ -140,21 +141,33 @@ public async Task<IActionResult> UpdateStock(int id, [FromBody] int newStock)
     }
 
     // DELETE: api/products/5
-    [Authorize]
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteProduct(int id)
+[Authorize]
+[HttpDelete("{id}")]
+public async Task<IActionResult> DeleteProduct(int id)
+{
+    var product = await _context.Products.FindAsync(id);
+    if (product == null)
     {
-        var product = await _context.Products.FindAsync(id);
-        
-        if (product == null)
-        {
-            return NotFound($"Product with ID {id} not found.");
-        }
+        return NotFound($"Product with ID {id} not found.");
+    }
 
+    try
+    {
         _context.Products.Remove(product);
         await _context.SaveChangesAsync();
-
         return Ok($"Product with ID {id} has been deleted.");
     }
-    
+    catch (DbUpdateException ex)
+    {
+        if (ex.InnerException is SqlException sqlEx && sqlEx.Number == 547) 
+        {
+            return BadRequest(new
+            {
+                message = "Cannot delete this product because it is referenced in existing orders. " +
+                          "Mark it as 'Inactive' instead to hide it from the storefront."
+            });
+        }
+        throw;
+    }
+}
 }

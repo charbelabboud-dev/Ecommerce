@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import { useToast } from '../contexts/ToastContexts';
+import { useConfirm } from '../contexts/ConfirmContext';
 import './AdminReviews.css';
 
 function AdminReviews() {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { confirm } = useConfirm();
   const [pendingReviews, setPendingReviews] = useState([]);
   const [approvedReviews, setApprovedReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,18 +53,19 @@ function AdminReviews() {
     }
   };
 
-  const handleDelete = async (reviewId) => {
-    if (window.confirm('Are you sure you want to delete this review?')) {
-      try {
-        await API.delete(`/reviews/${reviewId}`);
-        addToast('Review deleted successfully!', 'success');
-        fetchPendingReviews();
-      } catch (error) {
-        console.error('Error deleting review:', error);
-        addToast('Failed to delete review', 'error');
-      }
-    }
-  };
+const handleDelete = async (reviewId) => {
+  const userConfirmed = await confirm('Are you sure you want to delete this review?');
+  if (!userConfirmed) return;
+
+  try {
+    await API.delete(`/reviews/${reviewId}`);
+    addToast('Review deleted successfully', 'success');
+    fetchPendingReviews();  // or fetchAllReviews, depending on your code
+  } catch (error) {
+    console.error('Error deleting review:', error);
+    addToast('Failed to delete review', 'error');
+  }
+};
 
   const goBack = () => {
     navigate('/');

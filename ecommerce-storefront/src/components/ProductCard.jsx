@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { addToWishlist, removeFromWishlist, checkInWishlist } from '../services/wishlistApi';
+import { useToast } from './ToastContext';  
 
 function ProductCard({ product }) {
   const { addToCart } = useCart();
+  const { addToast } = useToast();  // ← ADD THIS
   const [isInWishlist, setIsInWishlist] = useState(false);
   const navigate = useNavigate();
 
@@ -24,17 +26,18 @@ function ProductCard({ product }) {
   const handleAddToCart = () => {
     const token = localStorage.getItem('customerToken');
     if (!token) {
-      alert('Please login to add items to cart');
+      addToast('Please login to add items to cart', 'error');  // ← REPLACED alert
       navigate('/login');
       return;
     }
     addToCart(product, 1);
+    addToast(`${product.product_Name} added to cart!`, 'success');  // ← ADDED
   };
 
   const handleWishlistToggle = async () => {
     const token = localStorage.getItem('customerToken');
     if (!token) {
-      alert('Please login to add items to wishlist');
+      addToast('Please login to add items to wishlist', 'error');  // ← REPLACED alert
       navigate('/login');
       return;
     }
@@ -42,9 +45,11 @@ function ProductCard({ product }) {
     if (isInWishlist) {
       await removeFromWishlist(product.product_Id);
       setIsInWishlist(false);
+      addToast('Removed from wishlist', 'info');  // ← ADDED
     } else {
       await addToWishlist(product.product_Id);
       setIsInWishlist(true);
+      addToast('Added to wishlist!', 'success');  // ← ADDED
     }
   };
 

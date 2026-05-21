@@ -19,14 +19,14 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
     product_CategoryId: '',
     product_ShippingFee: ''
   });
-
   const [loading, setLoading] = useState(false);
   const [currency, setCurrency] = useState('USD');
   const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [productImages, setProductImages] = useState([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
-
-  // Fetch categories when modal opens
+  // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -39,13 +39,23 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
     fetchCategories();
   }, []);
 
-    // Reset shipping fee when currency changes
-useEffect(() => {
-  setFormData(prev => ({
-    ...prev,
-    product_ShippingFee: ''
-  }));
-}, [currency]);
+  // Fetch existing images when editing
+  useEffect(() => {
+    if (product?.product_Id) {
+      fetchProductImages();
+    } else {
+      setProductImages([]);
+    }
+  }, [product]);
+
+  const fetchProductImages = async () => {
+    try {
+      const response = await API.get(`/upload/product-images/${product.product_Id}`);
+      setProductImages(response.data);
+    } catch (error) {
+      console.error('Error fetching images:', error);
+    }
+  };
 
   // Populate form when editing
   useEffect(() => {
@@ -63,14 +73,9 @@ useEffect(() => {
         product_CategoryId: product.product_CategoryId || '',
         product_ShippingFee: product.product_ShippingFee || ''
       });
-      
-      if (product.product_PriceUSD && product.product_PriceUSD > 0) {
-        setCurrency('USD');
-      } else if (product.product_PriceLBP && product.product_PriceLBP > 0) {
-        setCurrency('LBP');
-      } else {
-        setCurrency('USD');
-      }
+      if (product.product_PriceUSD && product.product_PriceUSD > 0) setCurrency('USD');
+      else if (product.product_PriceLBP && product.product_PriceLBP > 0) setCurrency('LBP');
+      else setCurrency('USD');
     } else {
       setFormData({
         product_Name: '',
@@ -87,20 +92,19 @@ useEffect(() => {
       });
       setCurrency('USD');
       setImageFile(null);
+      setProductImages([]);
     }
   }, [product]);
 
   const handleRemoveImage = async () => {
     if (!product?.productImages?.[0]?.productImage_Id) return;
-    
-    if (window.confirm("Are you sure you want to remove this image?")) {
+    if (window.confirm("Remove this image?")) {
       try {
         await API.delete(`/upload/delete-image/${product.productImages[0].productImage_Id}`);
-        addToast("Image removed successfully", "success");
+        addToast("Image removed", "success");
         onRefresh();
         onClose();
       } catch (error) {
-        console.error("Error removing image:", error);
         addToast("Failed to remove image", "error");
       }
     }
@@ -114,39 +118,58 @@ useEffect(() => {
     });
   };
 
-  const handleImageUpload = async () => {
-    if (!imageFile) return null;
-    
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
     const formData = new FormData();
     formData.append('productId', product?.product_Id || 0);
-    formData.append('image', imageFile);
-    formData.append('isMain', 'true');
-    
+    formData.append('image', file);
+    formData.append('isMain', productImages.length === 0); // first image becomes main
+
+    setUploadingImage(true);
     try {
-      setUploading(true);
-      const response = await API.post('/upload/product-image', formData, {
+      await API.post('/upload/product-image', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      addToast("Image uploaded successfully!", "success");
-      return response.data.image;
+      addToast('Image uploaded', 'success');
+      fetchProductImages();
+      onRefresh();
     } catch (error) {
-      console.error('Upload error:', error);
-      addToast("Failed to upload image", "error");
-      return null;
+      addToast('Upload failed', 'error');
     } finally {
-      setUploading(false);
+      setUploadingImage(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleDeleteImage = async (imageId) => {
+    if (!window.confirm('Remove this image?')) return;
+    try {
+      await API.delete(`/upload/delete-image/${imageId}`);
+      addToast('Image deleted', 'success');
+      fetchProductImages();
+      onRefresh();
+    } catch (error) {
+      addToast('Delete failed', 'error');
+    }
+  };
+
+  const handleSetMainImage = async (imageId) => {
+    try {
+      await API.put(`/upload/set-main-image/${imageId}`);
+      addToast('Main image updated', 'success');
+      fetchProductImages();
+      onRefresh();
+    } catch (error) {
+      addToast('Failed to set main image', 'error');
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
-    let uploadedImage = null;
-    if (imageFile) {
-      uploadedImage = await handleImageUpload();
-    }
-    
+
     const submitData = {
       product_Name: formData.product_Name,
       product_Description: formData.product_Description || null,
@@ -162,11 +185,8 @@ useEffect(() => {
       product_CategoryId: formData.product_CategoryId ? parseInt(formData.product_CategoryId) : null,
       product_ShippingFee: formData.product_ShippingFee ? parseFloat(formData.product_ShippingFee) : null
     };
-    
-    if (product) {
-      submitData.product_Id = product.product_Id;
-    }
-    
+    if (product) submitData.product_Id = product.product_Id;
+
     await onSave(submitData);
     setLoading(false);
   };
@@ -174,214 +194,106 @@ useEffect(() => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        
         <div className="modal-header">
           <h2>{product ? 'Edit Product' : 'Add New Product'}</h2>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
-        
         <form onSubmit={handleSubmit}>
-          
           <div className="form-group">
             <label>Product Name *</label>
-            <input
-              type="text"
-              name="product_Name"
-              value={formData.product_Name}
-              onChange={handleChange}
-              required
-              placeholder="Enter product name"
-            />
+            <input type="text" name="product_Name" value={formData.product_Name} onChange={handleChange} required />
           </div>
-          
-          {/* Category Dropdown */}
           <div className="form-group">
             <label>Category</label>
-            <select
-              name="product_CategoryId"
-              value={formData.product_CategoryId}
-              onChange={handleChange}
-              className="category-select"
-            >
+            <select name="product_CategoryId" value={formData.product_CategoryId} onChange={handleChange}>
               <option value="">-- Select Category --</option>
-              {categories.map(category => (
-                <option key={category.category_Id} value={category.category_Id}>
-                  {category.category_Name}
-                </option>
+              {categories.map(cat => (
+                <option key={cat.category_Id} value={cat.category_Id}>{cat.category_Name}</option>
               ))}
             </select>
           </div>
-          
-          {/* Image Upload */}
+
+          {/* Multi‑image manager */}
           <div className="form-group">
-            <label>Product Image</label>
-            <div className="image-upload-area">
-              {(product?.productImages?.[0]?.productImage_ImageUrl && !imageFile) ? (
-                <div className="current-image">
-                  <img 
-                    src={`http://localhost:5147${product.productImages[0].productImage_ImageUrl}`} 
-                    alt="Current"
-                    className="current-image-preview"
-                  />
-                  <button 
-                    type="button" 
-                    className="remove-image-btn"
-                    onClick={handleRemoveImage}
-                  >
-                    Remove Image
-                  </button>
-                </div>
-              ) : (
-                <div className="upload-placeholder">
-                  <input
-                    type="file"
-                    id="imageUpload"
-                    accept="image/*"
-                    onChange={(e) => setImageFile(e.target.files[0])}
-                    style={{ display: 'none' }}
-                  />
-                  <label htmlFor="imageUpload" className="upload-label">
-                    📸 Click to upload image
-                  </label>
-                  {imageFile && <p className="file-name">Selected: {imageFile.name}</p>}
-                </div>
-              )}
+            <label>Product Images</label>
+            <div className="image-manager">
+              <div className="current-images">
+                {productImages.map(img => (
+                  <div key={img.productImage_Id} className="image-item">
+                    <img src={`http://localhost:5147${img.productImage_ImageUrl}`} alt="" />
+                    <div className="image-actions">
+                      {!img.productImage_IsMain && (
+                        <button type="button" onClick={() => handleSetMainImage(img.productImage_Id)}>Main</button>
+                      )}
+                      <button type="button" className="delete-img" onClick={() => handleDeleteImage(img.productImage_Id)}>🗑️</button>
+                    </div>
+                    {img.productImage_IsMain && <span className="main-badge">Main</span>}
+                  </div>
+                ))}
+              </div>
+              <div className="upload-new">
+                <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage} />
+                {uploadingImage && <span>Uploading...</span>}
+              </div>
             </div>
           </div>
-          
+
           <div className="form-group">
             <label>Currency *</label>
             <div className="currency-buttons">
-              <button
-                type="button"
-                className={`currency-btn ${currency === 'USD' ? 'active' : ''}`}
-                onClick={() => setCurrency('USD')}
-              >
-                USD ($)
-              </button>
-              <button
-                type="button"
-                className={`currency-btn ${currency === 'LBP' ? 'active' : ''}`}
-                onClick={() => setCurrency('LBP')}
-              >
-                LBP (ل.ل)
-              </button>
+              <button type="button" className={`currency-btn ${currency === 'USD' ? 'active' : ''}`} onClick={() => setCurrency('USD')}>USD ($)</button>
+              <button type="button" className={`currency-btn ${currency === 'LBP' ? 'active' : ''}`} onClick={() => setCurrency('LBP')}>LBP (ل.ل)</button>
             </div>
           </div>
-          
+
           {currency === 'USD' ? (
             <div className="form-group">
               <label>Price (USD) *</label>
-              <input
-                type="number"
-                name="product_PriceUSD"
-                value={formData.product_PriceUSD}
-                onChange={handleChange}
-                step="0.01"
-                placeholder="0.00"
-                required
-              />
+              <input type="number" name="product_PriceUSD" value={formData.product_PriceUSD} onChange={handleChange} step="0.01" required />
             </div>
           ) : (
             <div className="form-group">
               <label>Price (LBP) *</label>
-              <input
-                type="number"
-                name="product_PriceLBP"
-                value={formData.product_PriceLBP}
-                onChange={handleChange}
-                step="0.01"
-                placeholder="0.00"
-                required
-              />
+              <input type="number" name="product_PriceLBP" value={formData.product_PriceLBP} onChange={handleChange} step="0.01" required />
             </div>
           )}
-          
+
           <div className="form-row">
             <div className="form-group">
-              <label>Stock Quantity</label>
-              <input
-                type="number"
-                name="product_Stock"
-                value={formData.product_Stock}
-                onChange={handleChange}
-                placeholder="0"
-              />
+              <label>Stock</label>
+              <input type="number" name="product_Stock" value={formData.product_Stock} onChange={handleChange} />
             </div>
             <div className="form-group">
               <label>SKU (Optional)</label>
-              <input
-                type="text"
-                name="product_SKU"
-                value={formData.product_SKU}
-                onChange={handleChange}
-                placeholder="Product code"
-              />
+              <input type="text" name="product_SKU" value={formData.product_SKU} onChange={handleChange} />
             </div>
           </div>
-          
+
           <div className="form-group">
             <label>Shipping Fee</label>
-            <input
-              type="number"
-              name="product_ShippingFee"
-              value={formData.product_ShippingFee}
-              onChange={handleChange}
-              step="0.01"
-              placeholder="0.00"
-            />
-            <small>Leave empty for free shipping</small>
+            <input type="number" name="product_ShippingFee" value={formData.product_ShippingFee} onChange={handleChange} step="0.01" />
           </div>
-          
+
           <div className="form-group">
             <label>Short Description</label>
-            <textarea
-              name="product_ShortDescription"
-              value={formData.product_ShortDescription}
-              onChange={handleChange}
-              rows="2"
-              placeholder="Brief description (shown in product cards)"
-            />
+            <textarea name="product_ShortDescription" value={formData.product_ShortDescription} onChange={handleChange} rows="2" />
           </div>
-          
           <div className="form-group">
             <label>Full Description</label>
-            <textarea
-              name="product_Description"
-              value={formData.product_Description}
-              onChange={handleChange}
-              rows="4"
-              placeholder="Detailed product description"
-            />
+            <textarea name="product_Description" value={formData.product_Description} onChange={handleChange} rows="4" />
           </div>
-          
+
           <div className="form-row">
-            <div className="form-group checkbox">
-              <label>
-                <input
-                  type="checkbox"
-                  name="product_IsActive"
-                  checked={formData.product_IsActive}
-                  onChange={handleChange}
-                />
-                Active (visible to customers)
-              </label>
+            <div className="checkbox">
+              <label><input type="checkbox" name="product_IsActive" checked={formData.product_IsActive} onChange={handleChange} /> Active</label>
             </div>
-            <div className="form-group checkbox">
-              <label>
-                <input
-                  type="checkbox"
-                  name="product_IsFeatured"
-                  checked={formData.product_IsFeatured}
-                  onChange={handleChange}
-                />
-                Featured (show on homepage)
-              </label>
+            <div className="checkbox">
+              <label><input type="checkbox" name="product_IsFeatured" checked={formData.product_IsFeatured} onChange={handleChange} /> Featured</label>
             </div>
           </div>
-          
-          <button type="submit" className="save-btn" disabled={loading || uploading}>
-            {loading || uploading ? 'Saving...' : (product ? 'Update Product' : 'Create Product')}
+
+          <button type="submit" className="save-btn" disabled={loading || uploadingImage}>
+            {loading ? 'Saving...' : (product ? 'Update' : 'Create')}
           </button>
         </form>
       </div>
