@@ -1,6 +1,6 @@
 # Hosting guide (phase-1-postgres)
 
-Free stack: **Neon** (Postgres) + **Render** (API) + **Cloudflare Pages** (storefront + admin).
+Free stack: **Neon** (Postgres) + **Render** (API) + **Vercel** (storefront + admin).
 
 Branch to deploy: `phase-1-postgres`  
 Repo: https://github.com/charbelabboud-dev/Ecommerce
@@ -78,39 +78,45 @@ Render **free tier** has ephemeral disk — product images are lost on redeploy.
 
 ---
 
-## 3. Frontends — Cloudflare Pages (free)
+## 3. Frontends — Vercel (free)
 
-Create **two** Pages projects from the same repo.
+Create **two** Vercel projects from the same repo: https://vercel.com/new
 
 ### Storefront
 
-| Setting | Value |
-|---------|-------|
-| Branch | `phase-1-postgres` |
-| Root directory | `ecommerce-storefront` |
-| Build command | `npm ci && npm run build` |
-| Build output | `build` |
-| Env var | `REACT_APP_API_URL` = `https://YOUR-API.onrender.com` |
+1. **Import** `charbelabboud-dev/Ecommerce`
+2. **Root Directory** → Edit → `ecommerce-storefront`
+3. **Branch** → `phase-1-postgres`
+4. **Framework Preset** → Create React App (auto-detected)
+5. **Environment Variables** → add:
+
+| Name | Value |
+|------|-------|
+| `REACT_APP_API_URL` | `https://ecommerce.onrender.com` |
+
+6. Deploy
 
 ### Admin
 
+Repeat with a **new** Vercel project:
+
 | Setting | Value |
 |---------|-------|
+| Root Directory | `ecommerce-admin` |
 | Branch | `phase-1-postgres` |
-| Root directory | `ecommerce-admin` |
-| Build command | `npm ci && npm run build` |
-| Build output | `build` |
-| Env var | `REACT_APP_API_URL` = `https://YOUR-API.onrender.com` |
+| Env var | `REACT_APP_API_URL` = `https://ecommerce.onrender.com` |
 
-`public/_redirects` is included for client-side routing.
+`vercel.json` in each app handles SPA routing (React Router).
+
+After deploy, note both URLs (e.g. `https://ecommerce-storefront.vercel.app`).
 
 ---
 
 ## 4. Wire CORS (required)
 
-After Cloudflare gives you URLs (e.g. `https://ecommerce-storefront.pages.dev`):
+After Vercel gives you URLs (e.g. `https://ecommerce-storefront.vercel.app`):
 
-1. Render dashboard → **primeplus-api** → Environment
+1. Render dashboard → **Ecommerce** (API) → Environment
 2. Set:
    - `CorsSettings__AllowedOrigins__0` = storefront URL
    - `CorsSettings__AllowedOrigins__1` = admin URL
