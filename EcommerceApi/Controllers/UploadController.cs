@@ -159,6 +159,30 @@ public class UploadController : ControllerBase
         return Ok(new { message = "Image deleted successfully" });
     }
 
+    // PUT: api/upload/set-main-image/{id}
+    [Authorize(Roles = "Admin")]
+    [HttpPut("set-main-image/{id}")]
+    public async Task<IActionResult> SetMainImage(int id)
+    {
+        var image = await _context.ProductImages.FindAsync(id);
+        if (image == null)
+        {
+            return NotFound($"Image with ID {id} not found.");
+        }
+
+        var productImages = await _context.ProductImages
+            .Where(pi => pi.ProductImage_ProductId == image.ProductImage_ProductId)
+            .ToListAsync();
+
+        foreach (var productImage in productImages)
+        {
+            productImage.ProductImage_IsMain = productImage.ProductImage_Id == id;
+        }
+
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Main image updated" });
+    }
+
     // GET: api/upload/product-images/{productId}
     [HttpGet("product-images/{productId}")]
     public async Task<ActionResult<IEnumerable<ProductImage>>> GetProductImages(int productId)

@@ -1,0 +1,39 @@
+# Render Blueprint — connect repo branch phase-1-postgres, then fill secret env vars in the dashboard.
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: primeplus-api
+    runtime: docker
+    plan: free
+    branch: phase-1-postgres
+    dockerfilePath: ./EcommerceApi/Dockerfile
+    dockerContext: ./EcommerceApi
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:${PORT}
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: JwtSettings__Secret
+        sync: false
+      - key: JwtSettings__Issuer
+        value: EcommerceApi
+      - key: JwtSettings__Audience
+        value: EcommerceClients
+      - key: JwtSettings__ExpirationHours
+        value: "8"
+      - key: EmailSettings__SenderEmail
+        sync: false
+      - key: EmailSettings__SenderPassword
+        sync: false
+      - key: EmailSettings__SmtpServer
+        value: smtp.gmail.com
+      - key: EmailSettings__SmtpPort
+        value: "587"
+      - key: CorsSettings__AllowedOrigins__0
+        sync: false
+      - key: CorsSettings__AllowedOrigins__1
+        sync: false
