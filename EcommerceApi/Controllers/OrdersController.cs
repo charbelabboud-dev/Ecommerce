@@ -234,7 +234,7 @@ public class OrdersController : ControllerBase
     private async Task<string> GenerateOrderNumberAsync()
     {
         var nextNumber = await _context.Database
-            .SqlQueryRaw<int>("SELECT NEXT VALUE FOR dbo.OrderNumberSeq")
+            .SqlQueryRaw<int>("SELECT nextval('order_number_seq')")
             .FirstAsync();
 
         string datePart = DateTime.UtcNow.ToString("yyyyMMdd");

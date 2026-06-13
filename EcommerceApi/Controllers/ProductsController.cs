@@ -5,7 +5,7 @@ using EcommerceApi.Models;
 using EcommerceApi.Services;
 using Microsoft.AspNetCore.Authorization; 
 using System.Security.Claims;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 
 namespace EcommerceApi.Controllers;
 
@@ -166,7 +166,7 @@ public async Task<IActionResult> DeleteProduct(int id)
     }
     catch (DbUpdateException ex)
     {
-        if (ex.InnerException is SqlException sqlEx && sqlEx.Number == 547) 
+        if (ex.InnerException is PostgresException pgEx && pgEx.SqlState == PostgresErrorCodes.ForeignKeyViolation)
         {
             return BadRequest(new
             {
