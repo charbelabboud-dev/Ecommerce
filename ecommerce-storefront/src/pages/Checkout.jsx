@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import API from '../services/api';
+import { getSalePriceUSD, getSalePriceLBP } from '../utils/pricing';
 
 function Checkout() {
   const navigate = useNavigate();
@@ -60,16 +61,20 @@ function Checkout() {
     e.preventDefault();
     setLoading(true);
 
-    const orderItems = cartItems.map(item => ({
-      orderItem_ProductId: item.product_Id,
-      orderItem_ProductName: item.product_Name,
-      orderItem_ProductSKU: item.product_SKU,
-      orderItem_Quantity: item.quantity,
-      orderItem_UnitPriceUSD: item.product_PriceUSD || null,
-      orderItem_UnitPriceLBP: item.product_PriceLBP || null,
-      orderItem_TotalPriceUSD: item.product_PriceUSD ? item.product_PriceUSD * item.quantity : null,
-      orderItem_TotalPriceLBP: item.product_PriceLBP ? item.product_PriceLBP * item.quantity : null,
-    }));
+    const orderItems = cartItems.map(item => {
+      const unitUsd = item.product_PriceUSD ? getSalePriceUSD(item) : null;
+      const unitLbp = item.product_PriceLBP ? getSalePriceLBP(item) : null;
+      return {
+        orderItem_ProductId: item.product_Id,
+        orderItem_ProductName: item.product_Name,
+        orderItem_ProductSKU: item.product_SKU,
+        orderItem_Quantity: item.quantity,
+        orderItem_UnitPriceUSD: unitUsd,
+        orderItem_UnitPriceLBP: unitLbp,
+        orderItem_TotalPriceUSD: unitUsd ? unitUsd * item.quantity : null,
+        orderItem_TotalPriceLBP: unitLbp ? unitLbp * item.quantity : null,
+      };
+    });
 
     const orderData = {
       order_CustomerName: formData.customerName,

@@ -3,7 +3,7 @@
   max-width: 1200px;
   margin: 0 auto;
   min-height: 100vh;
-  background-color: #f8f9fa;
+  background-color: var(--color-surface);
 }
 
 .admin-reviews-header {
@@ -23,15 +23,15 @@
 
 .header-left h1 {
   font-size: 24px;
-  color: #1e3a5f;
+  color: var(--color-primary);
   margin: 0;
   font-weight: 600;
 }
 
 .back-button {
   padding: 8px 16px;
-  background-color: #e2e8f0;
-  color: #1e3a5f;
+  background-color: var(--color-border);
+  color: var(--color-primary);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -41,7 +41,7 @@
 }
 
 .back-button:hover {
-  background-color: #cbd5e1;
+  background-color: var(--color-border-strong);
   transform: translateX(-2px);
 }
 
@@ -50,7 +50,7 @@
   display: flex;
   gap: 10px;
   margin-bottom: 24px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 10px;
 }
 
@@ -60,20 +60,20 @@
   border: none;
   font-size: 15px;
   font-weight: 500;
-  color: #64748b;
+  color: var(--color-text-muted);
   cursor: pointer;
   transition: all 0.2s ease;
   border-radius: 6px;
 }
 
 .tab-btn:hover {
-  color: #1e3a5f;
-  background-color: #e2e8f0;
+  color: var(--color-primary);
+  background-color: var(--color-border);
 }
 
 .tab-btn.active {
-  color: #1e3a5f;
-  background-color: #e2e8f0;
+  color: var(--color-primary);
+  background-color: var(--color-border);
 }
 
 /* Review Card */
@@ -82,7 +82,7 @@
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -92,11 +92,11 @@
   gap: 15px;
   margin-bottom: 15px;
   padding-bottom: 15px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .review-header strong {
-  color: #334155;
+  color: var(--color-text-secondary);
 }
 
 .stars {
@@ -111,7 +111,7 @@
 
 .review-comment p {
   margin-top: 8px;
-  color: #64748b;
+  color: var(--color-text-muted);
   line-height: 1.6;
 }
 
@@ -120,7 +120,7 @@
   gap: 10px;
   justify-content: flex-end;
   padding-top: 10px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-border);
 }
 
 .approve-btn {
@@ -142,7 +142,7 @@
 
 .delete-btn {
   padding: 8px 20px;
-  background-color: #c62828;
+  background-color: var(--color-danger-dark);
   color: white;
   border: none;
   border-radius: 6px;
@@ -162,13 +162,13 @@
   padding: 60px;
   background: white;
   border-radius: 12px;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 .loading {
   text-align: center;
   padding: 40px;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 /* Mobile Responsive */

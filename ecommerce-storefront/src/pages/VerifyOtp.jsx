@@ -1,22 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import API from '../services/api';
+import { getApiErrorMessage } from '../utils/apiErrors';
 import './VerifyOtp.css';
 
 function VerifyOtp() {
-  const navigate = useNavigate();
   const location = useLocation();
   const [otp, setOtp] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const emailParam = params.get('email');
     if (emailParam) {
       setEmail(emailParam);
+    }
+    if (params.get('emailSent') === 'false') {
+      setInfo('We could not send the verification email. Click Resend OTP below, or check the API terminal if you are running locally.');
     }
   }, [location]);
 
@@ -32,28 +36,22 @@ function VerifyOtp() {
     }
 
     try {
-      // Verify OTP
-      await API.post('/customerauth/verify-otp', {
+      const response = await API.post('/customerauth/verify-otp', {
         email: email,
         otpCode: otp
       });
-      
-      // Auto-login after successful verification
-      const loginResponse = await API.post('/customerauth/auto-login-after-verify', {
-        email: email
-      });
-      
-      const { token, customer } = loginResponse.data;
+
+      const { token, customer } = response.data;
       
       // Save token and customer info
       localStorage.setItem('customerToken', token);
       localStorage.setItem('customer', JSON.stringify(customer));
-      
-      // Redirect to home page
-      navigate('/');
+
+      // Full reload so navbar picks up the new session (same as login)
+      window.location.href = '/';
       
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid OTP. Please try again.');
+      setError(getApiErrorMessage(err, 'Invalid OTP. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -63,19 +61,24 @@ function VerifyOtp() {
     setResending(true);
     setError('');
     try {
-      await API.post('/customerauth/resend-otp', {
-        email: email
-      });
-      alert('New OTP sent to your email!');
+      const response = await API.post('/customerauth/resend-otp', { email });
+      if (response.data.emailSent === false) {
+        setInfo(response.data.message || 'Email could not be sent. Check the API terminal for your code if running locally.');
+        setError('');
+      } else {
+        setInfo('A new verification code was sent to your email.');
+        setError('');
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to resend OTP. Please try again.');
+      setError(getApiErrorMessage(err, 'Failed to resend OTP. Please try again.'));
+      setInfo('');
     } finally {
       setResending(false);
     }
   };
 
   return (
-    <div className="container">
+    <div className="verify-page">
       <div className="verify-container">
         <h1>Verify Your Email</h1>
         <p className="subtitle">
@@ -84,6 +87,7 @@ function VerifyOtp() {
           <strong>{email || 'your email'}</strong>
         </p>
 
+        {info && <div className="info-message">{info}</div>}
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit} className="verify-form">

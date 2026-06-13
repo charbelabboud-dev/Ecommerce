@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;  
-
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 namespace EcommerceApi.Models;
 
 public class Product
@@ -23,6 +23,17 @@ public class Product
     public DateTime Product_UpdatedAt { get; set; } = DateTime.UtcNow;
     public int? Product_CategoryId { get; set; }
     public decimal? Product_ShippingFee { get; set; }
+    public decimal? Product_DiscountPercent { get; set; }
+
+    [NotMapped]
+    public decimal? Product_EffectiveDiscountPercent { get; set; }
+
+    [NotMapped]
+    public decimal? Product_DiscountedPriceUSD { get; set; }
+
+    [NotMapped]
+    public decimal? Product_DiscountedPriceLBP { get; set; }
+
     public virtual Category? Category { get; set; }
 
     public virtual AdminUser? AdminUser { get; set; }

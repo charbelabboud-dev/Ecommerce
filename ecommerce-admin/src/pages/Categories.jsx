@@ -18,7 +18,8 @@ function Categories() {
     category_Name: '',
     category_Description: '',
     category_DisplayOrder: 0,
-    category_IsActive: true
+    category_IsActive: true,
+    category_DiscountPercent: ''
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -46,7 +47,8 @@ function Categories() {
         category_Name: category.category_Name,
         category_Description: category.category_Description || '',
         category_DisplayOrder: category.category_DisplayOrder,
-        category_IsActive: category.category_IsActive
+        category_IsActive: category.category_IsActive,
+        category_DiscountPercent: category.category_DiscountPercent ?? ''
       });
     } else {
       setEditingCategory(null);
@@ -54,7 +56,8 @@ function Categories() {
         category_Name: '',
         category_Description: '',
         category_DisplayOrder: 0,
-        category_IsActive: true
+        category_IsActive: true,
+        category_DiscountPercent: ''
       });
     }
     setShowModal(true);
@@ -78,15 +81,22 @@ function Categories() {
     setSubmitting(true);
 
     try {
+      const payload = {
+        ...formData,
+        category_DiscountPercent: formData.category_DiscountPercent !== ''
+          ? Math.min(100, Math.max(0, parseFloat(formData.category_DiscountPercent)))
+          : null
+      };
+
       if (editingCategory) {
-          const updateData = {
-          ...formData,
-          category_Id: editingCategory.category_Id 
+        const updateData = {
+          ...payload,
+          category_Id: editingCategory.category_Id
         };
         await API.put(`/categories/${editingCategory.category_Id}`, updateData);
         addToast('Category updated successfully', 'success');
       } else {
-        await API.post('/categories', formData);
+        await API.post('/categories', payload);
         addToast('Category created successfully', 'success');
       }
       handleCloseModal();
@@ -141,13 +151,14 @@ const handleDelete = async (id, name) => {
                 <th>Slug</th>
                 <th>Description</th>
                 <th>Display Order</th>
+                <th>Discount</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
   {categories.length === 0 ? (
-    <tr><td colSpan="6" className="no-data">No categories found.</td></tr>
+    <tr><td colSpan="7" className="no-data">No categories found.</td></tr>
   ) : (
     categories.map((category) => (
       <tr key={category.category_Id}>
@@ -155,6 +166,11 @@ const handleDelete = async (id, name) => {
         <td data-label="Slug"><span className="cell-value">{category.category_Slug}</span></td>
         <td data-label="Description"><span className="cell-value">{category.category_Description || '-'}</span></td>
         <td data-label="Display Order"><span className="cell-value">{category.category_DisplayOrder}</span></td>
+        <td data-label="Discount">
+          <span className="cell-value">
+            {category.category_DiscountPercent ? `${category.category_DiscountPercent}%` : '—'}
+          </span>
+        </td>
         <td data-label="Status">
           <span className={`status-badge ${category.category_IsActive ? 'status-active' : 'status-inactive'}`}>
             {category.category_IsActive ? 'Active' : 'Inactive'}
@@ -200,6 +216,19 @@ const handleDelete = async (id, name) => {
                   onChange={handleChange}
                   rows="3"
                   placeholder="Optional description"
+                />
+              </div>
+              <div className="form-group">
+                <label>Category Discount (%)</label>
+                <input
+                  type="number"
+                  name="category_DiscountPercent"
+                  value={formData.category_DiscountPercent}
+                  onChange={handleChange}
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  placeholder="e.g. 10 — applies to all products in this category"
                 />
               </div>
               <div className="form-row">

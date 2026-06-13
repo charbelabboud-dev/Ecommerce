@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import API from '../services/api';
+import API, { getImageUrl } from '../services/api';
 import { useToast } from '../contexts/ToastContexts';
 import './ProductFormModal.css';
 
@@ -17,7 +17,8 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
     product_IsActive: true,
     product_IsFeatured: false,
     product_CategoryId: '',
-    product_ShippingFee: ''
+    product_ShippingFee: '',
+    product_DiscountPercent: ''
   });
   const [loading, setLoading] = useState(false);
   const [currency, setCurrency] = useState('USD');
@@ -71,7 +72,8 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
         product_IsActive: product.product_IsActive !== undefined ? product.product_IsActive : true,
         product_IsFeatured: product.product_IsFeatured || false,
         product_CategoryId: product.product_CategoryId || '',
-        product_ShippingFee: product.product_ShippingFee || ''
+        product_ShippingFee: product.product_ShippingFee || '',
+        product_DiscountPercent: product.product_DiscountPercent ?? ''
       });
       if (product.product_PriceUSD && product.product_PriceUSD > 0) setCurrency('USD');
       else if (product.product_PriceLBP && product.product_PriceLBP > 0) setCurrency('LBP');
@@ -88,7 +90,8 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
         product_IsActive: true,
         product_IsFeatured: false,
         product_CategoryId: '',
-        product_ShippingFee: ''
+        product_ShippingFee: '',
+        product_DiscountPercent: ''
       });
       setCurrency('USD');
       setImageFile(null);
@@ -119,22 +122,34 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
   };
 
   const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
 
-    const formData = new FormData();
-    formData.append('productId', product?.product_Id || 0);
-    formData.append('image', file);
-    formData.append('isMain', productImages.length === 0); // first image becomes main
+    if (!product?.product_Id) {
+      addToast('Save the product first, then upload images', 'error');
+      e.target.value = '';
+      return;
+    }
 
     setUploadingImage(true);
+    let uploaded = 0;
+
     try {
-      await API.post('/upload/product-image', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      addToast('Image uploaded', 'success');
+      for (let i = 0; i < files.length; i++) {
+        const formData = new FormData();
+        formData.append('productId', product.product_Id);
+        formData.append('image', files[i]);
+        formData.append('isMain', productImages.length === 0 && i === 0);
+
+        await API.post('/upload/product-image', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        uploaded++;
+      }
+
+      addToast(`${uploaded} image${uploaded > 1 ? 's' : ''} uploaded`, 'success');
       fetchProductImages();
-      onRefresh();
+      onRefresh?.();
     } catch (error) {
       addToast('Upload failed', 'error');
     } finally {
@@ -183,7 +198,10 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
       product_IsActive: formData.product_IsActive,
       product_IsFeatured: formData.product_IsFeatured,
       product_CategoryId: formData.product_CategoryId ? parseInt(formData.product_CategoryId) : null,
-      product_ShippingFee: formData.product_ShippingFee ? parseFloat(formData.product_ShippingFee) : null
+      product_ShippingFee: formData.product_ShippingFee ? parseFloat(formData.product_ShippingFee) : null,
+      product_DiscountPercent: formData.product_DiscountPercent !== ''
+        ? Math.min(100, Math.max(0, parseFloat(formData.product_DiscountPercent)))
+        : null
     };
     if (product) submitData.product_Id = product.product_Id;
 
@@ -215,12 +233,15 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
 
           {/* Multi‑image manager */}
           <div className="form-group">
-            <label>Product Images</label>
+            <label>Product Images {productImages.length > 0 && `(${productImages.length})`}</label>
+            {!product?.product_Id && (
+              <p className="image-hint">Save the product first — the form will stay open so you can add multiple photos.</p>
+            )}
             <div className="image-manager">
               <div className="current-images">
                 {productImages.map(img => (
                   <div key={img.productImage_Id} className="image-item">
-                    <img src={`http://localhost:5147${img.productImage_ImageUrl}`} alt="" />
+                    <img src={getImageUrl(img.productImage_ImageUrl)} alt="" />
                     <div className="image-actions">
                       {!img.productImage_IsMain && (
                         <button type="button" onClick={() => handleSetMainImage(img.productImage_Id)}>Main</button>
@@ -232,7 +253,8 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
                 ))}
               </div>
               <div className="upload-new">
-                <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage} />
+                <input type="file" accept="image/*" multiple onChange={handleImageUpload} disabled={uploadingImage || !product?.product_Id} />
+                <span className="upload-hint">Select multiple images at once (JPG, PNG, WebP — max 5MB each)</span>
                 {uploadingImage && <span>Uploading...</span>}
               </div>
             </div>
@@ -272,6 +294,21 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
           <div className="form-group">
             <label>Shipping Fee</label>
             <input type="number" name="product_ShippingFee" value={formData.product_ShippingFee} onChange={handleChange} step="0.01" />
+          </div>
+
+          <div className="form-group">
+            <label>Product Discount (%)</label>
+            <input
+              type="number"
+              name="product_DiscountPercent"
+              value={formData.product_DiscountPercent}
+              onChange={handleChange}
+              min="0"
+              max="100"
+              step="0.01"
+              placeholder="e.g. 15 — leave empty for no product discount"
+            />
+            <span className="upload-hint">Overrides category discount when set. Category discount applies if this is empty.</span>
           </div>
 
           <div className="form-group">

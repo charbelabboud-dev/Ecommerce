@@ -3,7 +3,7 @@
   padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
-  background-color: #f8f9fa;
+  background-color: var(--color-surface);
   min-height: 100vh;
 }
 
@@ -14,15 +14,15 @@
   align-items: center;
   margin-bottom: 24px;
   padding: 20px 24px;
-  background: #ffffff;
+  background: var(--color-surface-elevated);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .dashboard-header h1 {
   font-size: 24px;
-  color: #1e3a5f;
+  color: var(--color-primary);
   margin: 0;
   font-weight: 600;
 }
@@ -35,9 +35,9 @@
 
 .settings-button {
   padding: 8px 20px;
-  background: #ffffff;
-  color: #2c7a7d;
-  border: 1px solid #2c7a7d;
+  background: var(--color-surface-elevated);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
@@ -49,15 +49,15 @@
 }
 
 .settings-button:hover {
-  background: #2c7a7d;
+  background: var(--color-accent);
   color: white;
 }
 
 .logout-button {
   padding: 8px 20px;
-  background: #ffffff;
-  color: #c62828;
-  border: 1px solid #c62828;
+  background: var(--color-surface-elevated);
+  color: var(--color-danger-dark);
+  border: 1px solid var(--color-danger-dark);
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
@@ -66,7 +66,7 @@
 }
 
 .logout-button:hover {
-  background: #c62828;
+  background: var(--color-danger-dark);
   color: white;
 }
 
@@ -79,10 +79,10 @@
 }
 
 .stat-card {
-  background: #ffffff;
+  background: var(--color-surface-elevated);
   padding: 24px;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: box-shadow 0.2s ease;
 }
@@ -104,7 +104,7 @@
   font-size: 42px;
   font-weight: 600;
   margin: 0;
-  color: #1e3a5f;
+  color: var(--color-primary);
 }
 
 /* Dashboard Navigation */
@@ -120,8 +120,8 @@
   padding: 12px 28px;
   font-size: 14px;
   font-weight: 500;
-  background: #ffffff;
-  color: #1e3a5f;
+  background: var(--color-surface-elevated);
+  color: var(--color-primary);
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   cursor: pointer;
@@ -132,9 +132,9 @@
 }
 
 .nav-button:hover {
-  background: #1e3a5f;
+  background: var(--color-primary);
   color: white;
-  border-color: #1e3a5f;
+  border-color: var(--color-primary);
 }
 
 /* Stock Alerts Container */
@@ -149,14 +149,14 @@
 .stock-card {
   background: white;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 /* Out of Stock Card - RED */
 .out-of-stock-card {
-  border-left: 4px solid #c62828;
+  border-left: 4px solid var(--color-danger-dark);
 }
 
 .out-of-stock-header {
@@ -165,12 +165,12 @@
 }
 
 .out-of-stock-header h4 {
-  color: #c62828;
+  color: var(--color-danger-dark);
 }
 
 .out-of-stock-badge {
   background-color: #ffebee;
-  color: #c62828;
+  color: var(--color-danger-dark);
 }
 
 /* Low Stock Card - ORANGE */
@@ -232,7 +232,7 @@
 }
 
 .stock-item:hover {
-  background-color: #f8f9fa;
+  background-color: var(--color-surface);
 }
 
 .product-name {
@@ -259,8 +259,8 @@
 }
 
 .stock-more:hover {
-  background-color: #f8f9fa;
-  color: #1e3a5f;
+  background-color: var(--color-surface);
+  color: var(--color-primary);
 }
 
 /* Loading State */

@@ -57,7 +57,7 @@ public class ReviewsController : ControllerBase
     }
 
     // GET: api/reviews/pending (Admin only)
-    [Authorize]
+    [Authorize (Roles = "Admin")]
     [HttpGet("pending")]
     public async Task<ActionResult<IEnumerable<Review>>> GetPendingReviews()
     {
@@ -71,7 +71,7 @@ public class ReviewsController : ControllerBase
     }
 
     // PUT: api/reviews/5/approve (Admin only)
-    [Authorize]
+    [Authorize (Roles = "Admin")]
     [HttpPut("{id}/approve")]
     public async Task<IActionResult> ApproveReview(int id)
     {
@@ -88,7 +88,7 @@ public class ReviewsController : ControllerBase
     }
 
     // DELETE: api/reviews/5 (Admin only)
-    [Authorize]
+    [Authorize (Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteReview(int id)
     {

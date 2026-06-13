@@ -3,17 +3,25 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import { useCart } from '../contexts/CartContext';
 import ProductCard from '../components/ProductCard';
+import ProductImageGallery from '../components/ProductImageGallery';
 import { getProductReviews, getProductRating, submitReview } from '../services/reviewApi';
 import { addToWishlist, removeFromWishlist, checkInWishlist } from '../services/wishlistApi';
+import { useToast } from '../contexts/ToastContext';
+import {
+  getEffectiveDiscountPercent,
+  hasDiscount,
+  formatProductPrice,
+  formatOriginalProductPrice
+} from '../utils/pricing';
 
 function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { addToast } = useToast();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const [mainImage, setMainImage] = useState(null);
   const [activeTab, setActiveTab] = useState('description');
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -21,9 +29,7 @@ function ProductDetail() {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
   
-  // Wishlist states
   const [isInWishlist, setIsInWishlist] = useState(false);
-  const [customerEmail, setCustomerEmail] = useState('');
   
   const [reviewForm, setReviewForm] = useState({
     review_CustomerName: '',
@@ -35,7 +41,6 @@ function ProductDetail() {
 
   // Reset state when product ID changes
   useEffect(() => {
-    setMainImage(null);
     setProduct(null);
     setLoading(true);
     setActiveTab('description');
@@ -52,23 +57,10 @@ function ProductDetail() {
     }
   }, [product]);
 
-  // Load customer email from localStorage
-  useEffect(() => {
-    const savedEmail = localStorage.getItem('customerEmail');
-    if (savedEmail) {
-      setCustomerEmail(savedEmail);
-    }
-  }, []);
-
   const fetchProduct = async () => {
     try {
       const response = await API.get(`/products/${id}`);
       setProduct(response.data);
-      if (response.data.productImages && response.data.productImages.length > 0) {
-        setMainImage(response.data.productImages[0].productImage_ImageUrl);
-      } else {
-        setMainImage(null);
-      }
     } catch (error) {
       console.error('Error fetching product:', error);
       navigate('/products');
@@ -102,9 +94,9 @@ function ProductDetail() {
   };
 
   const checkWishlistStatus = async () => {
-    const savedEmail = localStorage.getItem('customerEmail');
-    if (savedEmail && product) {
-      const inWishlist = await checkInWishlist(savedEmail, product.product_Id);
+    const token = localStorage.getItem('customerToken');
+    if (token && product) {
+      const inWishlist = await checkInWishlist(product.product_Id);
       setIsInWishlist(inWishlist);
     }
   };
@@ -114,7 +106,7 @@ function ProductDetail() {
     setSubmittingReview(true);
     try {
       await submitReview(reviewForm);
-      alert('Review submitted! Awaiting admin approval.');
+      addToast('Review submitted! Awaiting admin approval.', 'success');
       setShowReviewForm(false);
       setReviewForm({
         ...reviewForm,
@@ -126,76 +118,42 @@ function ProductDetail() {
       fetchReviews();
       fetchRating();
     } catch (error) {
-      alert('Failed to submit review');
+      addToast('Failed to submit review', 'error');
     } finally {
       setSubmittingReview(false);
     }
   };
 
-const handleWishlistToggle = async () => {
-  const token = localStorage.getItem('customerToken');
-  if (!token) {
-    alert('Please login to add items to wishlist');
-    navigate('/login');
-    return;
-  }
-  
-  const email = localStorage.getItem('customerEmail');
-  if (!email) {
-    alert('Please login to add items to wishlist');
-    navigate('/login');
-    return;
-  }
-  
-  if (isInWishlist) {
-    await removeFromWishlist(email, product.product_Id);
-    setIsInWishlist(false);
-    alert('Removed from wishlist');
-  } else {
-    await addToWishlist(email, product.product_Id);
-    setIsInWishlist(true);
-    alert('Added to wishlist!');
-  }
-};
+  const handleWishlistToggle = async () => {
+    const token = localStorage.getItem('customerToken');
+    if (!token) {
+      addToast('Please login to add items to wishlist', 'error');
+      navigate('/login');
+      return;
+    }
 
-  const getPrice = () => {
-    if (product?.product_PriceUSD) {
-      return `$${product.product_PriceUSD.toFixed(2)}`;
+    if (isInWishlist) {
+      await removeFromWishlist(product.product_Id);
+      setIsInWishlist(false);
+      addToast('Removed from wishlist', 'info');
+    } else {
+      await addToWishlist(product.product_Id);
+      setIsInWishlist(true);
+      addToast('Added to wishlist!', 'success');
     }
-    if (product?.product_PriceLBP) {
-      return `${product.product_PriceLBP.toFixed(2)} LBP`;
-    }
-    return 'N/A';
   };
 
-  const getOriginalPrice = () => {
-    if (product?.product_CompareAtPriceUSD) {
-      return `$${product.product_CompareAtPriceUSD.toFixed(2)}`;
-    }
-    if (product?.product_CompareAtPriceLBP) {
-      return `${product.product_CompareAtPriceLBP.toFixed(2)} LBP`;
-    }
-    return null;
-  };
 
-  const getDiscount = () => {
-    const original = getOriginalPrice();
-    if (!original) return null;
-    const current = parseFloat(getPrice().replace(/[^0-9.-]/g, ''));
-    const originalVal = parseFloat(original.replace(/[^0-9.-]/g, ''));
-    const discount = Math.round(((originalVal - current) / originalVal) * 100);
-    return discount;
+  const handleAddToCart = () => {
+    const token = localStorage.getItem('customerToken');
+    if (!token) {
+      addToast('Please login to add items to cart', 'error');
+      navigate('/login');
+      return;
+    }
+    addToCart(product, quantity);
+    addToast(`${product.product_Name} added to cart!`, 'success');
   };
-
-const handleAddToCart = () => {
-  const token = localStorage.getItem('customerToken');
-  if (!token) {
-    alert('Please login to add items to cart');
-    navigate('/login');
-    return;
-  }
-  addToCart(product, quantity);
-};
 
   const handleQuantityChange = (e) => {
     let val = parseInt(e.target.value);
@@ -207,7 +165,8 @@ const handleAddToCart = () => {
 
   const isLowStock = product?.product_Stock <= 5 && product?.product_Stock > 0;
   const isOutOfStock = product?.product_Stock === 0;
-  const discount = getDiscount();
+  const discount = product ? Math.round(getEffectiveDiscountPercent(product) || 0) : 0;
+  const onSale = product ? hasDiscount(product) : false;
 
   if (loading) {
     return (
@@ -246,38 +205,11 @@ const handleAddToCart = () => {
 
         <div className="product-detail-grid">
           {/* Image Gallery */}
-          <div className="product-gallery">
-            <div className="main-image-container">
-              {mainImage ? (
-                <img 
-                  src={`http://localhost:5147${mainImage}`} 
-                  alt={product.product_Name}
-                  className="main-product-image"
-                />
-              ) : (
-                <div className="main-image-placeholder">No Image Available</div>
-              )}
-              {discount && (
-                <div className="discount-badge">-{discount}%</div>
-              )}
-            </div>
-            {product.productImages && product.productImages.length > 1 && (
-              <div className="thumbnail-list">
-                {product.productImages.map((img, index) => (
-                  <div
-                    key={img.productImage_Id}
-                    className={`thumbnail-item ${mainImage === img.productImage_ImageUrl ? 'active' : ''}`}
-                    onClick={() => setMainImage(img.productImage_ImageUrl)}
-                  >
-                    <img 
-                      src={`http://localhost:5147${img.productImage_ImageUrl}`}
-                      alt={`Thumbnail ${index + 1}`}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <ProductImageGallery
+            images={product.productImages || []}
+            productName={product.product_Name}
+            discount={discount}
+          />
 
           {/* Product Info */}
           <div className="product-info-section">
@@ -296,10 +228,14 @@ const handleAddToCart = () => {
               <span className="rating-text">({rating.reviewCount} reviews)</span>
             </div>
 
+            {onSale && (
+              <div className="product-discount-pill">Discount {discount}%</div>
+            )}
+
             <div className="product-pricing">
-              <div className="current-price">{getPrice()}</div>
-              {getOriginalPrice() && (
-                <div className="original-price">{getOriginalPrice()}</div>
+              <div className="current-price">{formatProductPrice(product)}</div>
+              {onSale && (
+                <div className="original-price">{formatOriginalProductPrice(product)}</div>
               )}
             </div>
 

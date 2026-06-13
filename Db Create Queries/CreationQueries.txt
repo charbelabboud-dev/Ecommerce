@@ -148,3 +148,74 @@ CREATE TABLE Categories (
 -- Add CategoryId to Products table
 ALTER TABLE Products ADD Product_CategoryId INT NULL;
 ALTER TABLE Products ADD FOREIGN KEY (Product_CategoryId) REFERENCES Categories(Category_Id);
+GO
+
+-- Add shipping fee columns to AdminUsers
+ALTER TABLE AdminUsers ADD AdminUser_ShippingFeeUSD DECIMAL(18,2) NULL;
+ALTER TABLE AdminUsers ADD AdminUser_ShippingFeeLBP DECIMAL(18,2) NULL;
+GO
+
+-- Add shipping fee and category to Products (if not exists)
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'Product_ShippingFee')
+    ALTER TABLE Products ADD Product_ShippingFee DECIMAL(18,2) NULL DEFAULT 0;
+GO
+
+-- Table: Customers
+CREATE TABLE Customers (
+    Customer_Id INT PRIMARY KEY IDENTITY(1,1),
+    Customer_Name NVARCHAR(200) NOT NULL,
+    Customer_Email NVARCHAR(200) NOT NULL UNIQUE,
+    Customer_PasswordHash NVARCHAR(255) NOT NULL,
+    Customer_Phone NVARCHAR(50) NULL,
+    Customer_Address NVARCHAR(500) NULL,
+    IsEmailConfirmed BIT DEFAULT 0,
+    Customer_CreatedAt DATETIME2 DEFAULT GETDATE(),
+    Customer_UpdatedAt DATETIME2 DEFAULT GETDATE()
+);
+GO
+
+-- Table: EmailVerificationOtps
+CREATE TABLE EmailVerificationOtps (
+    Otp_Id INT PRIMARY KEY IDENTITY(1,1),
+    Otp_Email NVARCHAR(200) NOT NULL,
+    Otp_Code NVARCHAR(6) NOT NULL,
+    Otp_ExpiresAt DATETIME2 NOT NULL,
+    Otp_IsUsed BIT DEFAULT 0,
+    Otp_CreatedAt DATETIME2 DEFAULT GETDATE()
+);
+GO
+
+-- Table: Wishlists
+CREATE TABLE Wishlists (
+    Wishlist_Id INT PRIMARY KEY IDENTITY(1,1),
+    Wishlist_CustomerId INT NOT NULL,
+    Wishlist_ProductId INT NOT NULL,
+    Wishlist_CreatedAt DATETIME2 DEFAULT GETDATE(),
+    FOREIGN KEY (Wishlist_CustomerId) REFERENCES Customers(Customer_Id) ON DELETE CASCADE,
+    FOREIGN KEY (Wishlist_ProductId) REFERENCES Products(Product_Id) ON DELETE CASCADE
+);
+GO
+
+-- Table: Reviews
+CREATE TABLE Reviews (
+    Review_Id INT PRIMARY KEY IDENTITY(1,1),
+    Review_ProductId INT NOT NULL,
+    Review_CustomerName NVARCHAR(200) NOT NULL,
+    Review_CustomerEmail NVARCHAR(200) NOT NULL,
+    Review_Rating INT NOT NULL,
+    Review_Comment NVARCHAR(1000) NOT NULL,
+    Review_IsApproved BIT DEFAULT 0,
+    Review_CreatedAt DATETIME2 DEFAULT GETDATE(),
+    FOREIGN KEY (Review_ProductId) REFERENCES Products(Product_Id) ON DELETE CASCADE,
+    CONSTRAINT CHK_Review_Rating CHECK (Review_Rating BETWEEN 1 AND 5)
+);
+GO
+
+-- Add CustomerId to Orders
+ALTER TABLE Orders ADD Order_CustomerId INT NULL;
+ALTER TABLE Orders ADD FOREIGN KEY (Order_CustomerId) REFERENCES Customers(Customer_Id);
+GO
+
+-- Order number sequence (required for order creation)
+CREATE SEQUENCE dbo.OrderNumberSeq AS INT START WITH 1 INCREMENT BY 1;
+GO

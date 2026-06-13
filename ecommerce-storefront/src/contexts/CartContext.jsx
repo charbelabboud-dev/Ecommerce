@@ -1,5 +1,7 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
 
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useToast } from './ToastContext';
+import { getUnitPrice } from '../utils/pricing';
 const CartContext = createContext();
 
 export const useCart = () => useContext(CartContext);
@@ -7,7 +9,7 @@ export const useCart = () => useContext(CartContext);
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState([]);
   const [customerId, setCustomerId] = useState(null);
-
+  const {addToast} = useToast();
   // Load cart from localStorage when customer logs in
   useEffect(() => {
     const token = localStorage.getItem('customerToken');
@@ -40,7 +42,10 @@ export function CartProvider({ children }) {
 
   const addToCart = (product, quantity = 1) => {
     const token = localStorage.getItem('customerToken');
-    if (!token) return;
+    if (!token) {
+      addToast('Please login to add items to your cart.', 'error');
+      return;
+    }
 
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item.product_Id === product.product_Id);
@@ -79,8 +84,7 @@ export function CartProvider({ children }) {
 
   const getCartTotal = () => {
     return cartItems.reduce((total, item) => {
-      const price = item.product_PriceUSD || item.product_PriceLBP || 0;
-      return total + price * item.quantity;
+      return total + getUnitPrice(item) * item.quantity;
     }, 0);
   };
 

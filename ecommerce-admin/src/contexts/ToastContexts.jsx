@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useRef } from 'react';
 import Toast from '../components/Toast';
 
 const ToastContext = createContext();
@@ -7,10 +7,19 @@ export const useToast = () => useContext(ToastContext);
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
+  const toastIdRef = useRef(0);
 
   const addToast = (message, type = 'info') => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
+    toastIdRef.current += 1;
+    const id = `${Date.now()}-${toastIdRef.current}`;
+
+    setToasts((prev) => {
+      const alreadyShowing = prev.some(
+        (toast) => toast.message === message && toast.type === type
+      );
+      if (alreadyShowing) return prev;
+      return [...prev, { id, message, type }];
+    });
   };
 
   const removeToast = (id) => {

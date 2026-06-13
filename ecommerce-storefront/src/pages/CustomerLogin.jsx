@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import API from '../services/api';
+import { getApiErrorMessage } from '../utils/apiErrors';
+import PasswordInput from '../components/PasswordInput';
+import PageMeta from '../components/PageMeta';
 import './CustomerLogin.css';
 
 function CustomerLogin() {
@@ -40,14 +43,20 @@ const handleSubmit = async (e) => {
     window.location.href = '/';
     
   } catch (err) {
-    setError(err.response?.data?.message || 'Login failed. Please try again.');
+    const data = err.response?.data;
+    if (data?.requiresVerification && formData.email) {
+      navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
+      return;
+    }
+    setError(getApiErrorMessage(err, 'Login failed. Please try again.'));
   } finally {
     setLoading(false);
   }
 };
 
   return (
-    <div className="container">
+    <div className="login-page">
+      <PageMeta title="Sign In" description="Sign in to your account to shop and view order history." path="/login" />
       <div className="login-container">
         <h1>Welcome Back</h1>
         <p className="subtitle">Sign in to your account</p>
@@ -69,14 +78,15 @@ const handleSubmit = async (e) => {
 
           <div className="form-group">
             <label>Password</label>
-            <input
-              type="password"
+            <PasswordInput
               name="password"
               value={formData.password}
               onChange={handleChange}
               required
               placeholder="Enter your password"
+              autoComplete="current-password"
             />
+            <Link to="/forgot-password" className="forgot-link">Forgot password?</Link>
           </div>
 
           <button type="submit" className="login-btn" disabled={loading}>
@@ -88,9 +98,6 @@ const handleSubmit = async (e) => {
           <p>
             Don't have an account? <Link to="/register">Create Account</Link>
           </p>
-          <Link to="/forgot-password" className="forgot-link">
-            Forgot Password?
-          </Link>
         </div>
       </div>
     </div>

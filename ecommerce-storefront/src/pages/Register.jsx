@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import API from '../services/api';
+import { getApiErrorMessage } from '../utils/apiErrors';
+import { useToast } from '../contexts/ToastContext';
+import PasswordInput from '../components/PasswordInput';
 import './Register.css';
+
+const MIN_PASSWORD_LENGTH = 8;
+const MIN_PHONE_LENGTH = 7;
 
 function Register() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -31,20 +38,27 @@ const handleSubmit = async (e) => {
   setLoading(true);
   setError('');
 
+  if (formData.password.length < MIN_PASSWORD_LENGTH) {
+    setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+    setLoading(false);
+    return;
+  }
+
   if (formData.password !== formData.confirmPassword) {
     setError('Passwords do not match');
     setLoading(false);
     return;
   }
 
-  if (formData.password.length < 6) {
-    setError('Password must be at least 6 characters');
+  const phoneDigits = formData.phone.replace(/\D/g, '');
+  if (phoneDigits.length < MIN_PHONE_LENGTH) {
+    setError(`Phone number must be at least ${MIN_PHONE_LENGTH} digits`);
     setLoading(false);
     return;
   }
 
   try {
-    await API.post('/customerauth/register', {
+    const response = await API.post('/customerauth/register', {
       name: formData.name,
       email: formData.email,
       password: formData.password,
@@ -52,11 +66,12 @@ const handleSubmit = async (e) => {
       address: formData.address
     });
 
-    // Redirect to OTP verification page
-    navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
+    const email = response.data.email || formData.email;
+    addToast(response.data.message || 'Account created! Check your email for the verification code.', 'success');
+    navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
     
   } catch (err) {
-    setError(err.response?.data?.message || 'Registration failed. Please try again.');
+    setError(getApiErrorMessage(err, 'Registration failed. Please try again.'));
   } finally {
     setLoading(false);
   }
@@ -64,7 +79,7 @@ const handleSubmit = async (e) => {
 
   if (success) {
     return (
-      <div className="container">
+      <div className="register-page">
         <div className="register-success">
           <div className="success-icon">✓</div>
           <h2>Registration Successful!</h2>
@@ -82,7 +97,7 @@ const handleSubmit = async (e) => {
   }
 
   return (
-    <div className="container">
+    <div className="register-page">
       <div className="register-container">
         <h1>Create Account</h1>
         <p className="subtitle">Join us and start shopping</p>
@@ -117,36 +132,40 @@ const handleSubmit = async (e) => {
           <div className="form-row">
             <div className="form-group">
               <label>Password *</label>
-              <input
-                type="password"
+              <PasswordInput
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 required
-                placeholder="Minimum 6 characters"
+                minLength={MIN_PASSWORD_LENGTH}
+                placeholder={`Minimum ${MIN_PASSWORD_LENGTH} characters`}
+                autoComplete="new-password"
               />
             </div>
             <div className="form-group">
               <label>Confirm Password *</label>
-              <input
-                type="password"
+              <PasswordInput
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
+                minLength={MIN_PASSWORD_LENGTH}
                 placeholder="Re-enter password"
+                autoComplete="new-password"
               />
             </div>
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label>Phone Number</label>
+              <label>Phone Number *</label>
               <input
                 type="tel"
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
+                required
+                minLength={MIN_PHONE_LENGTH}
                 placeholder="+961 00 000 000"
               />
             </div>
@@ -163,8 +182,11 @@ const handleSubmit = async (e) => {
           </div>
 
           <button type="submit" className="register-btn" disabled={loading}>
-            {loading ? 'Creating Account...' : 'Register'}
+            {loading ? 'Creating account...' : 'Register'}
           </button>
+          {loading && (
+            <p className="register-loading-note">Setting up your account — you'll be redirected to verify your email.</p>
+          )}
         </form>
 
         <p className="login-redirect">

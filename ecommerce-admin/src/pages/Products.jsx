@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import API from '../services/api';
+import API, { getImageUrl } from '../services/api';
 import { useToast } from '../contexts/ToastContexts';
 import ProductFormModal from '../components/ProductFormModal';
 import './Products.css';
@@ -68,6 +68,15 @@ function Products() {
 
   const filteredProducts = getFilteredProducts();
 
+  const formatDiscount = (product) => {
+    const value = product.product_DiscountPercent ?? product.category?.category_DiscountPercent;
+    if (value == null || value <= 0) return '—';
+    const num = Number(value);
+    const label = Number.isInteger(num) ? `${num}%` : `${num.toFixed(1)}%`;
+    if (product.product_DiscountPercent) return label;
+    return `${label} (cat)`;
+  };
+
 const handleDelete = async (id, productName) => {
   const userConfirmed = await confirm(`Are you sure you want to delete "${productName}"?`);
   if (!userConfirmed) return;
@@ -107,11 +116,12 @@ const handleDelete = async (id, productName) => {
         
         await API.put(`/products/${editingProduct.product_Id}`, updateData);
         addToast("Product updated successfully", "success");
+        handleCloseModal();
       } else {
-        await API.post("/products", productData);
-        addToast("Product created successfully", "success");
+        const response = await API.post("/products", productData);
+        addToast("Product created! Add one or more images below.", "success");
+        setEditingProduct(response.data);
       }
-      handleCloseModal();
       fetchProducts();
     } catch (error) {
       console.error("Error saving product:", error);
@@ -179,10 +189,11 @@ const handleDelete = async (id, productName) => {
           <table className="products-table">
             <thead>
               <tr>
-                {/* <th>Image</th> */}
+                <th>Image</th>
                 <th>Name</th>
                 <th>Category</th>
                 <th>Price</th>
+                <th>Discount</th>
                 <th>Stock</th>
                 <th>Shipping Fee</th>
                 <th>Status</th>
@@ -192,7 +203,7 @@ const handleDelete = async (id, productName) => {
             <tbody>
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="no-data">
+                  <td colSpan="9" className="no-data">
                     {products.length === 0 
                       ? 'No products found. Click "Add Product" to create one.' 
                       : `No ${filter !== 'all' ? filter : ''} products match your search.`}
@@ -204,7 +215,7 @@ const handleDelete = async (id, productName) => {
                     <td className="product-image-cell">
                       {product.productImages && product.productImages.length > 0 ? (
                         <img 
-                          src={`http://localhost:5147${product.productImages[0].productImage_ImageUrl}`} 
+                          src={getImageUrl(product.productImages[0].productImage_ImageUrl)} 
                           alt={product.product_Name}
                           className="product-image-thumb"
                           onError={(e) => {
@@ -229,6 +240,7 @@ const handleDelete = async (id, productName) => {
                           ? `${product.product_PriceLBP.toFixed(2)} LBP`
                           : 'N/A'}
                     </td>
+                    <td data-label="Discount">{formatDiscount(product)}</td>
                     <td className="product-stock-cell" data-label="Stock">
                       {product.product_Stock}
                     </td>

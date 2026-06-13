@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EcommerceApi.Data;
 using EcommerceApi.Models;
+using EcommerceApi.Services;
 using Microsoft.AspNetCore.Authorization; 
 using System.Security.Claims;
 using Microsoft.Data.SqlClient;
@@ -24,12 +25,12 @@ public class ProductsController : ControllerBase
     public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
     {
         var products = await _context.Products
-            // .Where(p => p.Product_IsActive == true)
             .Include(p => p.ProductImages)
             .Include(p => p.Category)
             .OrderBy(p => p.Product_Name)
             .ToListAsync();
 
+        DiscountHelper.ApplyDiscountFields(products);
         return Ok(products);
     }
 
@@ -47,11 +48,12 @@ public class ProductsController : ControllerBase
             return NotFound($"Product with ID {id} not found.");
         }
 
+        DiscountHelper.ApplyDiscountFields(product);
         return Ok(product);
     }
 
     // POST: api/products
-    [Authorize]
+    [Authorize (Roles = "Admin")]
 [HttpPost]
 public async Task<ActionResult<Product>> CreateProduct(Product product)
 {
@@ -65,6 +67,7 @@ public async Task<ActionResult<Product>> CreateProduct(Product product)
     product.Product_AdminUserId = int.Parse(adminIdClaim.Value);
     product.Product_CreatedAt = DateTime.UtcNow;
     product.Product_UpdatedAt = DateTime.UtcNow;
+    product.Product_DiscountPercent = NormalizeDiscount(product.Product_DiscountPercent);
 
     _context.Products.Add(product);
     await _context.SaveChangesAsync();
@@ -73,6 +76,7 @@ public async Task<ActionResult<Product>> CreateProduct(Product product)
 }
 
 // GET: api/products/low-stock
+[Authorize(Roles = "Admin")]
 [HttpGet("low-stock")]
 public async Task<ActionResult<IEnumerable<Product>>> GetLowStockProducts()
 {
@@ -85,7 +89,7 @@ public async Task<ActionResult<IEnumerable<Product>>> GetLowStockProducts()
     return Ok(lowStockProducts);
 }
 // PATCH: api/products/{id}/stock
-[Authorize]
+[Authorize (Roles = "Admin")]
 [HttpPatch("{id}/stock")]
 public async Task<IActionResult> UpdateStock(int id, [FromBody] int newStock)
 {
@@ -103,7 +107,7 @@ public async Task<IActionResult> UpdateStock(int id, [FromBody] int newStock)
     return Ok(new { message = "Stock updated successfully", stock = product.Product_Stock });
 }
     // PUT: api/products/5
-    [Authorize]
+    [Authorize (Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateProduct(int id, Product updatedProduct)
     {
@@ -134,14 +138,17 @@ public async Task<IActionResult> UpdateStock(int id, [FromBody] int newStock)
         existingProduct.Product_UpdatedAt = DateTime.UtcNow;
         existingProduct.Product_CategoryId = updatedProduct.Product_CategoryId;
         existingProduct.Product_ShippingFee = updatedProduct.Product_ShippingFee;
+        existingProduct.Product_DiscountPercent = NormalizeDiscount(updatedProduct.Product_DiscountPercent);
 
         await _context.SaveChangesAsync();
 
+        await _context.Entry(existingProduct).Reference(p => p.Category).LoadAsync();
+        DiscountHelper.ApplyDiscountFields(existingProduct);
         return Ok(existingProduct);
     }
 
     // DELETE: api/products/5
-[Authorize]
+[Authorize (Roles = "Admin")]
 [HttpDelete("{id}")]
 public async Task<IActionResult> DeleteProduct(int id)
 {
@@ -170,4 +177,14 @@ public async Task<IActionResult> DeleteProduct(int id)
         throw;
     }
 }
+
+    private static decimal? NormalizeDiscount(decimal? discount)
+    {
+        if (!discount.HasValue || discount <= 0)
+        {
+            return null;
+        }
+
+        return Math.Min(100, Math.Max(0, discount.Value));
+    }
 }

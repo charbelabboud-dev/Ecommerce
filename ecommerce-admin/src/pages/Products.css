@@ -4,7 +4,7 @@
   max-width: 1400px;
   margin: 0 auto;
   min-height: 100vh;
-  background-color: #f8f9fa;
+  background-color: var(--color-surface);
 }
 
 .products-header {
@@ -31,7 +31,7 @@
 
 .products-header h1 {
   font-size: 24px;
-  color: #1e3a5f;
+  color: var(--color-primary);
   margin: 0;
   font-weight: 600;
 }
@@ -39,8 +39,8 @@
 /* Back Button */
 .back-button {
   padding: 8px 16px;
-  background-color: #e2e8f0;
-  color: #1e3a5f;
+  background-color: var(--color-border);
+  color: var(--color-primary);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -50,14 +50,14 @@
 }
 
 .back-button:hover {
-  background-color: #cbd5e1;
+  background-color: var(--color-border-strong);
   transform: translateX(-2px);
 }
 
 /* Add Button */
 .add-button {
   padding: 10px 20px;
-  background-color: #1e3a5f;
+  background-color: var(--color-primary);
   color: white;
   border: none;
   border-radius: 8px;
@@ -68,7 +68,7 @@
 }
 
 .add-button:hover {
-  background-color: #2c4c7a;
+  background-color: var(--color-primary-hover);
   transform: translateY(-1px);
 }
 
@@ -81,22 +81,22 @@
 .search-input {
   width: 100%;
   padding: 10px 35px 10px 15px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   font-size: 14px;
   transition: all 0.2s ease;
   background-color: white;
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #1e3a5f;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
 }
 
 .search-input::placeholder {
-  color: #94a3b8;
+  color: var(--color-text-light);
 }
 
 .clear-search {
@@ -107,14 +107,14 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #94a3b8;
+  color: var(--color-text-light);
   font-size: 16px;
   padding: 0 5px;
   transition: color 0.2s ease;
 }
 
 .clear-search:hover {
-  color: #c62828;
+  color: var(--color-danger-dark);
 }
 
 /* Filter Buttons */
@@ -127,31 +127,31 @@
 .filter-btn {
   padding: 8px 16px;
   background-color: white;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
   transition: all 0.2s ease;
-  color: #1e3a5f;
+  color: var(--color-primary);
 }
 
 .filter-btn:hover {
-  background-color: #e2e8f0;
+  background-color: var(--color-border);
   transform: translateY(-1px);
 }
 
 .filter-btn.active {
-  background-color: #1e3a5f;
+  background-color: var(--color-primary);
   color: white;
-  border-color: #1e3a5f;
+  border-color: var(--color-primary);
 }
 
 /* Loading State */
 .loading {
   text-align: center;
   padding: 40px;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 16px;
 }
 
@@ -159,7 +159,7 @@
 .products-table-container {
   background: white;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -188,7 +188,7 @@
   .products-table tbody tr {
     display: block;
     margin-bottom: 20px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--color-border);
     border-radius: 12px;
     padding: 16px;
     background: white;
@@ -199,7 +199,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 12px 0;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--color-border);
     text-align: right;
   }
   
@@ -210,7 +210,7 @@
   .products-table tbody td::before {
     content: attr(data-label);
     font-weight: 600;
-    color: #334155;
+    color: var(--color-text-secondary);
     text-align: left;
     flex: 1;
     font-size: 13px;
@@ -282,12 +282,12 @@
   /* Product Shipping Fee */
 .product-shipping-cell {
   font-weight: 500;
-  color: #2c7a7d;
+  color: var(--color-accent);
 }
 /* Product Shipping Fee */
 .product-shipping-cell {
   font-weight: 500;
-  color: #2c7a7d;
+  color: var(--color-accent);
 }
 
 /* Mobile view */
@@ -308,23 +308,23 @@
 .products-table th {
   text-align: left;
   padding: 16px;
-  background-color: #f8f9fa;
+  background-color: var(--color-surface);
   font-weight: 600;
-  color: #334155;
+  color: var(--color-text-secondary);
   font-size: 14px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .products-table td {
   padding: 16px;
-  border-bottom: 1px solid #e2e8f0;
-  color: #1e293b;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
   font-size: 14px;
   vertical-align: middle;
 }
 
 .products-table tr:hover {
-  background-color: #f8f9fa;
+  background-color: var(--color-surface);
 }
 
 /* Product Image */
@@ -337,20 +337,20 @@
   height: 50px;
   object-fit: cover;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
 }
 
 .product-image-placeholder {
   width: 50px;
   height: 50px;
-  background-color: #f1f5f9;
+  background-color: var(--color-surface-alt);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 10px;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
 }
 
 /* Product Name */
@@ -362,7 +362,7 @@
 /* Price */
 .product-price-cell {
   font-weight: 500;
-  color: #1e3a5f;
+  color: var(--color-primary);
 }
 
 /* Status Badges */
@@ -380,7 +380,7 @@
   display: inline-block;
   padding: 4px 12px;
   background-color: #ffebee;
-  color: #c62828;
+  color: var(--color-danger-dark);
   border-radius: 20px;
   font-size: 12px;
   font-weight: 500;
@@ -416,7 +416,7 @@
 
 .delete-btn {
   background-color: #ffebee;
-  color: #c62828;
+  color: var(--color-danger-dark);
   margin-right: 8px;
 }
 /* Product Category */
@@ -428,7 +428,7 @@
 /* Update mobile view labels */
 
 .delete-btn:hover {
-  background-color: #c62828;
+  background-color: var(--color-danger-dark);
   color: white;
 }
 
@@ -436,7 +436,7 @@
 .no-data {
   text-align: center;
   padding: 40px;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 /* Small Mobile */

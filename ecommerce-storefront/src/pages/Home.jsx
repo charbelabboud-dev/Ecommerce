@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import API, { getStoreSettings } from '../services/api';
 import ProductCard from '../components/ProductCard';
+import PageMeta from '../components/PageMeta';
 
 
 function Home() {
@@ -15,8 +17,8 @@ function Home() {
 
   const fetchStoreName = async () => {
     const settings = await getStoreSettings();
-    if (settings && settings.adminUser_StoreName) {
-      setStoreName(settings.adminUser_StoreName);
+    if (settings?.storeName) {
+      setStoreName(settings.storeName);
     }
   };
 
@@ -34,12 +36,17 @@ function Home() {
 
   return (
     <div>
+      <PageMeta
+        title="Home"
+        description={`Shop curated products at ${storeName}. Quality items delivered to your door.`}
+        path="/"
+      />
       {/* Hero Section */}
       <div className="hero">
         <div className="container">
-          <h1>Welcome to {storeName}</h1>
-          <p>Discover amazing products at great prices</p>
-          <a href="/products" className="shop-now-btn">Shop Now</a>
+          <h1>Welcome to <span>{storeName}</span></h1>
+          <p>Curated quality · Trusted service · Delivered to your door</p>
+          <Link to="/products" className="shop-now-btn">Shop Now</Link>
         </div>
       </div>
 

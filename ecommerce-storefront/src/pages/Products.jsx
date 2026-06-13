@@ -1,6 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import API from '../services/api';
 import ProductCard from '../components/ProductCard';
+import PageMeta from '../components/PageMeta';
+import { SearchIcon, GridIcon } from '../components/Icons';
+import './Products.css';
+
+function ProductSkeleton() {
+  return (
+    <div className="product-skeleton">
+      <div className="product-skeleton-image" />
+      <div className="product-skeleton-body">
+        <div className="product-skeleton-line medium" />
+        <div className="product-skeleton-line short" />
+        <div className="product-skeleton-line" />
+      </div>
+    </div>
+  );
+}
 
 function Products() {
   const [products, setProducts] = useState([]);
@@ -8,12 +25,20 @@ function Products() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle('catalog-filter-open', isFilterOpen);
+    return () => document.body.classList.remove('catalog-filter-open');
+  }, [isFilterOpen]);
+
+  const closeFilters = () => setIsFilterOpen(false);
 
   const fetchProducts = async () => {
     try {
@@ -36,43 +61,82 @@ function Products() {
     }
   };
 
-  const filteredProducts = products.filter(product => {
-    // Search filter
-    const matchesSearch = product.product_Name.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Category filter
-    const matchesCategory = selectedCategory === 'all' || product.product_CategoryId === parseInt(selectedCategory);
-    
-    return matchesSearch && matchesCategory;
-  });
+  const filteredProducts = useMemo(() => {
+    let result = products.filter(product => {
+      const matchesSearch = product.product_Name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || product.product_CategoryId === parseInt(selectedCategory);
+      return matchesSearch && matchesCategory;
+    });
+
+    switch (sortBy) {
+      case 'price-low':
+        result = [...result].sort((a, b) => (a.product_PriceUSD || a.product_PriceLBP || 0) - (b.product_PriceUSD || b.product_PriceLBP || 0));
+        break;
+      case 'price-high':
+        result = [...result].sort((a, b) => (b.product_PriceUSD || b.product_PriceLBP || 0) - (a.product_PriceUSD || a.product_PriceLBP || 0));
+        break;
+      case 'name':
+        result = [...result].sort((a, b) => a.product_Name.localeCompare(b.product_Name));
+        break;
+      default:
+        result = [...result].sort((a, b) => new Date(b.product_CreatedAt) - new Date(a.product_CreatedAt));
+    }
+
+    return result;
+  }, [products, searchTerm, selectedCategory, sortBy]);
 
   const getProductCount = (categoryId) => {
     if (categoryId === 'all') return products.length;
     return products.filter(p => p.product_CategoryId === parseInt(categoryId)).length;
   };
 
+  const activeCategoryName = selectedCategory === 'all'
+    ? 'All Products'
+    : categories.find(c => c.category_Id === parseInt(selectedCategory))?.category_Name || 'Products';
+
   return (
-    <div className="container">
-      <div className="products-page">
-        {/* Filter Toggle Button (Mobile) */}
-        <button 
-          className="filter-toggle-btn"
+    <div className="products-page-wrap">
+      <PageMeta
+        title="Products"
+        description="Browse our full catalog of quality products."
+        path="/products"
+      />
+      <div className="container products-page">
+        <nav className="products-breadcrumb" aria-label="Breadcrumb">
+          <Link to="/">Home</Link>
+          <span>/</span>
+          <span>{activeCategoryName}</span>
+        </nav>
+
+        <button
+          type="button"
+          className="catalog-filter-toggle"
           onClick={() => setIsFilterOpen(!isFilterOpen)}
         >
-          {isFilterOpen ? '✕ Close Filters' : '☰ Filters'}
+          <GridIcon size={16} />
+          {isFilterOpen ? 'Close Filters' : 'Browse Categories'}
         </button>
 
-        <div className="products-layout">
-          {/* Sidebar Filters */}
-          <aside className={`filters-sidebar ${isFilterOpen ? 'open' : ''}`}>
-            <div className="filter-section">
+        {isFilterOpen && (
+          <button
+            type="button"
+            className="catalog-filter-backdrop"
+            onClick={closeFilters}
+            aria-label="Close categories"
+          />
+        )}
+
+        <div className="catalog-layout">
+          <aside className={`catalog-filters ${isFilterOpen ? 'open' : ''}`}>
+            <div className="catalog-filter-section">
               <h3>Categories</h3>
-              <div className="category-list">
+              <div className="catalog-category-list">
                 <button
-                  className={`category-item ${selectedCategory === 'all' ? 'active' : ''}`}
+                  type="button"
+                  className={`catalog-category-item ${selectedCategory === 'all' ? 'active' : ''}`}
                   onClick={() => {
                     setSelectedCategory('all');
-                    setIsFilterOpen(false);
+                    closeFilters();
                   }}
                 >
                   <span>All Products</span>
@@ -80,11 +144,12 @@ function Products() {
                 </button>
                 {categories.map(category => (
                   <button
+                    type="button"
                     key={category.category_Id}
-                    className={`category-item ${selectedCategory === category.category_Id.toString() ? 'active' : ''}`}
+                    className={`catalog-category-item ${selectedCategory === category.category_Id.toString() ? 'active' : ''}`}
                     onClick={() => {
                       setSelectedCategory(category.category_Id.toString());
-                      setIsFilterOpen(false);
+                      closeFilters();
                     }}
                   >
                     <span>{category.category_Name}</span>
@@ -95,42 +160,60 @@ function Products() {
             </div>
           </aside>
 
-          {/* Main Content */}
-          <main className="products-main">
-            <div className="products-header">
-              <h1>
-                {selectedCategory === 'all' 
-                  ? 'All Products' 
-                  : categories.find(c => c.category_Id === parseInt(selectedCategory))?.category_Name || 'Products'}
-              </h1>
-              <div className="search-bar">
-                <input
-                  type="text"
-                  placeholder="🔍 Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="search-input"
-                />
+          <main className="catalog-main">
+            <header className="catalog-toolbar">
+              <div className="catalog-toolbar-title">
+                <h1>{activeCategoryName}</h1>
+                <span className="results-count">
+                  {loading ? 'Loading...' : `${filteredProducts.length} product${filteredProducts.length !== 1 ? 's' : ''}`}
+                </span>
               </div>
-            </div>
-
-            <div className="results-count">
-              Found {filteredProducts.length} product(s)
-            </div>
+              <div className="catalog-toolbar-actions">
+                <div className="search-bar">
+                  <SearchIcon size={18} className="search-icon" />
+                  <input
+                    type="search"
+                    placeholder="Search products..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="search-input"
+                    aria-label="Search products"
+                  />
+                </div>
+                <div className="sort-select-wrap">
+                  <label htmlFor="sort-products">Sort</label>
+                  <select
+                    id="sort-products"
+                    className="sort-select"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    <option value="newest">Newest</option>
+                    <option value="name">Name A–Z</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                  </select>
+                </div>
+              </div>
+            </header>
 
             {loading ? (
-              <div className="loading">Loading products...</div>
+              <div className="catalog-skeleton-grid">
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <ProductSkeleton key={n} />
+                ))}
+              </div>
+            ) : filteredProducts.length > 0 ? (
+              <div className="catalog-grid">
+                {filteredProducts.map(product => (
+                  <ProductCard key={product.product_Id} product={product} />
+                ))}
+              </div>
             ) : (
-              <>
-                <div className="products-grid">
-                  {filteredProducts.map(product => (
-                    <ProductCard key={product.product_Id} product={product} />
-                  ))}
-                </div>
-                {filteredProducts.length === 0 && (
-                  <div className="no-results">No products found matching your criteria.</div>
-                )}
-              </>
+              <div className="no-results">
+                <h3>No products found</h3>
+                <p>Try adjusting your search or browse a different category.</p>
+              </div>
             )}
           </main>
         </div>

@@ -42,8 +42,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8f9fa;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
   border-radius: 16px 16px 0 0;
 }
 
@@ -51,7 +51,7 @@
   margin: 0;
   font-size: 22px;
   font-weight: 600;
-  color: #1e3a5f;
+  color: var(--color-primary);
 }
 
 .close-btn {
@@ -59,14 +59,14 @@
   border: none;
   font-size: 28px;
   cursor: pointer;
-  color: #64748b;
+  color: var(--color-text-muted);
   transition: all 0.2s ease;
   line-height: 1;
   padding: 0 8px;
 }
 
 .close-btn:hover {
-  color: #c62828;
+  color: var(--color-danger-dark);
   transform: scale(1.1);
 }
 
@@ -83,7 +83,7 @@ form {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: #334155;
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
@@ -92,7 +92,7 @@ form {
 .form-group select {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   font-size: 14px;
   transition: all 0.2s ease;
@@ -103,7 +103,7 @@ form {
 .form-group textarea:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #1e3a5f;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
 }
 
@@ -111,7 +111,7 @@ form {
 .category-select {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   font-size: 14px;
   background-color: white;
@@ -127,12 +127,12 @@ form {
 
 .category-select:focus {
   outline: none;
-  border-color: #1e3a5f;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
 }
 
 .category-select:hover {
-  border-color: #1e3a5f;
+  border-color: var(--color-primary);
 }
 
 .category-select option {
@@ -149,24 +149,24 @@ form {
 .currency-btn {
   padding: 10px 20px;
   background-color: white;
-  border: 2px solid #cbd5e1;
+  border: 2px solid var(--color-border-strong);
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s ease;
-  color: #1e3a5f;
+  color: var(--color-primary);
   flex: 1;
 }
 
 .currency-btn:hover {
-  background-color: #e2e8f0;
+  background-color: var(--color-border);
 }
 
 .currency-btn.active {
-  background-color: #1e3a5f;
+  background-color: var(--color-primary);
   color: white;
-  border-color: #1e3a5f;
+  border-color: var(--color-primary);
 }
 
 /* Two-column layout */
@@ -206,7 +206,7 @@ form {
 .save-btn {
   width: 100%;
   padding: 12px 20px;
-  background-color: #1e3a5f;
+  background-color: var(--color-primary);
   color: white;
   border: none;
   border-radius: 8px;
@@ -218,28 +218,28 @@ form {
 }
 
 .save-btn:hover:not(:disabled) {
-  background-color: #2c4c7a;
+  background-color: var(--color-primary-hover);
   transform: translateY(-1px);
 }
 
 .save-btn:disabled {
-  background-color: #94a3b8;
+  background-color: var(--color-text-light);
   cursor: not-allowed;
 }
 
 /* Image Upload Area */
 .image-upload-area {
-  border: 2px dashed #cbd5e1;
+  border: 2px dashed var(--color-border-strong);
   border-radius: 12px;
   padding: 20px;
   text-align: center;
-  background-color: #f8f9fa;
+  background-color: var(--color-surface);
   transition: border-color 0.2s ease;
   margin-bottom: 12px;
 }
 
 .image-upload-area:hover {
-  border-color: #1e3a5f;
+  border-color: var(--color-primary);
 }
 
 .current-image {
@@ -252,7 +252,7 @@ form {
   max-width: 200px;
   max-height: 200px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   object-fit: cover;
 }
 
@@ -265,8 +265,8 @@ form {
 .remove-image-btn {
   padding: 8px 20px;
   background-color: white;
-  color: #c62828;
-  border: 1px solid #c62828;
+  color: var(--color-danger-dark);
+  border: 1px solid var(--color-danger-dark);
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
@@ -275,7 +275,7 @@ form {
 }
 
 .remove-image-btn:hover {
-  background-color: #c62828;
+  background-color: var(--color-danger-dark);
   color: white;
   transform: translateY(-1px);
 }
@@ -290,7 +290,7 @@ form {
 .upload-label {
   display: inline-block;
   padding: 10px 24px;
-  background-color: #1e3a5f;
+  background-color: var(--color-primary);
   color: white;
   border-radius: 8px;
   cursor: pointer;
@@ -300,14 +300,14 @@ form {
 }
 
 .upload-label:hover {
-  background-color: #2c4c7a;
+  background-color: var(--color-primary-hover);
   transform: translateY(-1px);
 }
 
 .file-name {
   margin-top: 5px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 /* Scrollbar */
@@ -316,17 +316,17 @@ form {
 }
 
 .modal-content::-webkit-scrollbar-track {
-  background: #e2e8f0;
+  background: var(--color-border);
   border-radius: 4px;
 }
 
 .modal-content::-webkit-scrollbar-thumb {
-  background: #94a3b8;
+  background: var(--color-text-light);
   border-radius: 4px;
 }
 
 .modal-content::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: var(--color-text-muted);
 }
 
 /* Mobile Responsive */
@@ -385,6 +385,18 @@ form {
 .image-manager {
   margin-top: 10px;
 }
+
+.image-hint,
+.upload-hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 6px 0 0;
+}
+
+.upload-hint {
+  display: block;
+  margin-top: 8px;
+}
 .current-images {
   display: flex;
   flex-wrap: wrap;
@@ -394,10 +406,10 @@ form {
 .image-item {
   position: relative;
   width: 80px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   overflow: hidden;
-  background: #f8f9fa;
+  background: var(--color-surface);
 }
 .image-item img {
   width: 100%;
@@ -414,13 +426,13 @@ form {
   border: none;
   cursor: pointer;
   font-size: 11px;
-  color: #1e3a5f;
+  color: var(--color-primary);
 }
 .main-badge {
   position: absolute;
   top: 2px;
   left: 2px;
-  background: #1e3a5f;
+  background: var(--color-primary);
   color: white;
   font-size: 10px;
   padding: 2px 6px;

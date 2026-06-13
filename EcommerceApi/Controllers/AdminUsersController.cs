@@ -9,7 +9,7 @@ namespace EcommerceApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize (Roles = "Admin")]
 public class AdminUsersController : ControllerBase
 {
     private readonly AppDbContext _context;

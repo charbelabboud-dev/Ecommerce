@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCustomerOrders } from '../services/OrderApi';
+import { useToast } from '../contexts/ToastContext';
 import './OrderHistory.css';
 
 function OrderHistory() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -12,12 +14,13 @@ function OrderHistory() {
   useEffect(() => {
     const token = localStorage.getItem('customerToken');
     if (!token) {
-      alert('Please login to view your orders');
+      setLoading(false);
+      addToast('Please login to view your orders', 'error');
       navigate('/login');
       return;
     }
     fetchOrders();
-  }, [navigate]);
+  }, [navigate, addToast]);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -56,7 +59,7 @@ function OrderHistory() {
         {orders.length === 0 ? (
           <div className="no-orders">
             <p>You haven't placed any orders yet.</p>
-            <Link to="/products" className="shop-now-btn">Start Shopping</Link>
+            <Link to="/products" className="order-history-cta">Start Shopping</Link>
           </div>
         ) : (
           <div className="orders-list">

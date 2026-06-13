@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { getWishlist, removeFromWishlist } from '../services/wishlistApi';
+import { getImageUrl as buildImageUrl } from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 import './Wishlist.css';
 
 function Wishlist() {
@@ -9,11 +11,12 @@ function Wishlist() {
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const { addToCart: addToCartContext } = useCart();
+  const { addToast } = useToast();
 
   useEffect(() => {
     const token = localStorage.getItem('customerToken');
     if (!token) {
-      alert('Please login to view your wishlist');
+      addToast('Please login to view your wishlist', 'error');
       navigate('/login');
       return;
     }
@@ -34,11 +37,11 @@ function Wishlist() {
 
   const handleAddToCart = async (product) => {
     if (product.product_Stock === 0) {
-      alert('This product is out of stock and cannot be added to cart');
+      addToast('This product is out of stock', 'error');
       return;
     }
     addToCartContext(product, 1);
-    alert('Added to cart!');
+    addToast(`${product.product_Name} added to cart!`, 'success');
   };
 
   const getPrice = (product) => {
@@ -51,9 +54,9 @@ function Wishlist() {
     return 'N/A';
   };
 
-  const getImageUrl = (product) => {
-    if (product.productImages && product.productImages.length > 0) {
-      return `http://localhost:5147${product.productImages[0].productImage_ImageUrl}`;
+  const getProductImage = (product) => {
+    if (product.productImages?.length > 0) {
+      return buildImageUrl(product.productImages[0].productImage_ImageUrl);
     }
     return null;
   };
@@ -86,9 +89,9 @@ function Wishlist() {
         {wishlistItems.map((item) => (
           <div key={item.wishlist_Id} className="wishlist-card">
             <Link to={`/product/${item.product.product_Id}`} className="wishlist-image-link">
-              {getImageUrl(item.product) ? (
+              {getProductImage(item.product) ? (
                 <img 
-                  src={getImageUrl(item.product)} 
+                  src={getProductImage(item.product)} 
                   alt={item.product.product_Name}
                   className="wishlist-image"
                 />
@@ -121,7 +124,6 @@ function Wishlist() {
                   className="add-to-cart-wishlist"
                   onClick={() => handleAddToCart(item.product)}
                   disabled={item.product.product_Stock === 0}
-                  style={item.product.product_Stock === 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                 >
                   {item.product.product_Stock === 0 ? 'Out of Stock' : 'Add to Cart'}
                 </button>

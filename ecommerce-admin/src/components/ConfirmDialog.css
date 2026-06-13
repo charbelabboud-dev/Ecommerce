@@ -25,7 +25,7 @@
 .confirm-message {
   font-size: 16px;
   margin-bottom: 24px;
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 .confirm-actions {
@@ -45,7 +45,7 @@
 }
 
 .confirm-ok {
-  background-color: #c62828;
+  background-color: var(--color-danger-dark);
   color: white;
 }
 
@@ -55,10 +55,10 @@
 }
 
 .confirm-cancel {
-  background-color: #e2e8f0;
-  color: #1e3a5f;
+  background-color: var(--color-border);
+  color: var(--color-primary);
 }
 
 .confirm-cancel:hover {
-  background-color: #cbd5e1;
+  background-color: var(--color-border-strong);
 }

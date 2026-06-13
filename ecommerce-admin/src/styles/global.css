@@ -1,0 +1,117 @@
+/* Admin global component system */
+
+.admin-page {
+  padding: var(--space-6, 24px);
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.admin-card {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.admin-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.admin-btn-secondary {
+  padding: 8px 16px;
+  background: var(--color-surface-elevated);
+  color: var(--color-primary);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.admin-btn-secondary:hover {
+  background: var(--color-surface-alt);
+  border-color: var(--color-primary-light);
+}
+
+.admin-input,
+.search-input {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: var(--font-size-sm);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-elevated);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.admin-input:focus,
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(15, 39, 68, 0.1);
+}
+
+.back-button {
+  padding: 8px 16px;
+  background: var(--color-surface-alt);
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  font-family: var(--font-family);
+  transition: all var(--transition-fast);
+}
+
+.back-button:hover {
+  background: var(--color-border);
+}
+
+.header-left h1 {
+  font-size: var(--font-size-2xl);
+  color: var(--color-primary);
+  margin: 0;
+  font-weight: 800;
+}
+
+.loading, .no-data {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--color-text-muted);
+}
+
+.status-badge {
+  display: inline-flex;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-badge.pending { background: var(--color-warning-bg); color: var(--color-warning); }
+.status-badge.confirmed { background: #eff6ff; color: var(--color-info); }
+.status-badge.shipped { background: #eef2ff; color: #4338ca; }
+.status-badge.delivered { background: var(--color-success-bg); color: var(--color-success); }
+.status-badge.cancelled { background: var(--color-danger-bg); color: var(--color-danger-dark); }

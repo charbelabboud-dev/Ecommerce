@@ -1,20 +1,25 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import { getImageUrl } from '../services/api';
+import { useToast } from '../contexts/ToastContext';
+import { formatProductPrice, getUnitPrice } from '../utils/pricing';
 
 function Cart() {
   const navigate = useNavigate();
   const { cartItems, removeFromCart, updateQuantity, getCartTotal, getCartCount } = useCart();
+  const { addToast } = useToast();
 
-  const getPrice = (item) => {
-    if (item.product_PriceUSD) {
-      return `$${item.product_PriceUSD.toFixed(2)}`;
+  useEffect(() => {
+    const token = localStorage.getItem('customerToken');
+    if (!token) {
+      addToast('Please login to view your cart', 'error');
+      navigate('/login');
+      return;
     }
-    if (item.product_PriceLBP) {
-      return `${item.product_PriceLBP.toFixed(2)} LBP`;
-    }
-    return 'N/A';
-  };
+  }, [navigate]);
+
+  const getPrice = (item) => formatProductPrice(item);
 
   const getShippingDisplay = (item) => {
     const shipping = item.product_ShippingFee || 0;
@@ -26,10 +31,7 @@ function Cart() {
     return `${shipping.toFixed(2)} LBP`;
   };
 
-  const getItemSubtotal = (item) => {
-    const price = item.product_PriceUSD || item.product_PriceLBP || 0;
-    return price * item.quantity;
-  };
+  const getItemSubtotal = (item) => getUnitPrice(item) * item.quantity;
 
   const getItemShipping = (item) => {
     const shipping = item.product_ShippingFee || 0;
@@ -101,7 +103,7 @@ const handleCheckout = () => {
               <div className="cart-item-product">
                 <img 
                   src={item.productImages?.[0]?.productImage_ImageUrl 
-                    ? `http://localhost:5147${item.productImages[0].productImage_ImageUrl}` 
+                    ? getImageUrl(item.productImages[0].productImage_ImageUrl) 
                     : null}
                   alt={item.product_Name}
                   className="cart-item-image"

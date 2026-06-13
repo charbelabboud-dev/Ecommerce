@@ -7,8 +7,9 @@ using System.Security.Cryptography;
 using System.Text;
 using EcommerceApi.Data;
 using EcommerceApi.Models;
-using System.Net.Mail;
-using System.Net;
+using EcommerceApi.DTOs;
+using EcommerceApi.Services;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace EcommerceApi.Controllers;
 
@@ -18,30 +19,63 @@ public class CustomerAuthController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly IConfiguration _configuration;
+    private readonly EmailService _emailService;
+    private readonly IHostEnvironment _environment;
+    private readonly ILogger<CustomerAuthController> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public CustomerAuthController(AppDbContext context, IConfiguration configuration)
+    public CustomerAuthController(
+        AppDbContext context,
+        IConfiguration configuration,
+        EmailService emailService,
+        IHostEnvironment environment,
+        ILogger<CustomerAuthController> logger,
+        IServiceScopeFactory scopeFactory)
     {
         _context = context;
         _configuration = configuration;
+        _emailService = emailService;
+        _environment = environment;
+        _logger = logger;
+        _scopeFactory = scopeFactory;
     }
 
-    // POST: api/customerauth/register
     [HttpPost("register")]
+    [EnableRateLimiting("auth")]
     public async Task<ActionResult<object>> Register([FromBody] CustomerRegisterRequest request)
     {
-        // Check if email already exists
         var existingCustomer = await _context.Customers
             .FirstOrDefaultAsync(c => c.Customer_Email == request.Email);
 
         if (existingCustomer != null)
         {
-            return BadRequest(new { message = "Email already registered." });
+            if (existingCustomer.IsEmailConfirmed)
+            {
+                return BadRequest(new { message = "Email already registered. Please sign in instead." });
+            }
+
+            existingCustomer.Customer_Name = request.Name;
+            existingCustomer.Customer_PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+            existingCustomer.Customer_Phone = request.Phone;
+            existingCustomer.Customer_Address = request.Address;
+            existingCustomer.Customer_UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            var resumeOtpDelivery = await IssueVerificationOtpAsync(request.Email);
+
+            return Ok(new
+            {
+                message = resumeOtpDelivery.EmailSent
+                    ? "Account not verified yet. A new verification code has been sent to your email."
+                    : "Account updated, but the verification email could not be sent. Use Resend OTP on the verify page.",
+                email = request.Email,
+                requiresVerification = true,
+                emailSent = resumeOtpDelivery.EmailSent
+            });
         }
 
-        // Hash password
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-        // Create customer
         var customer = new Customer
         {
             Customer_Name = request.Name,
@@ -57,31 +91,21 @@ public class CustomerAuthController : ControllerBase
         _context.Customers.Add(customer);
         await _context.SaveChangesAsync();
 
-        // Generate and send OTP
-        var otpCode = GenerateOtp();
-        var otp = new EmailVerificationOtp
+        var otpDelivery = await IssueVerificationOtpAsync(request.Email);
+
+        return Ok(new
         {
-            Otp_Email = request.Email,
-            Otp_Code = otpCode,
-            Otp_ExpiresAt = DateTime.UtcNow.AddMinutes(10),
-            Otp_IsUsed = false,
-            Otp_CreatedAt = DateTime.UtcNow
-        };
-
-        _context.EmailVerificationOtps.Add(otp);
-        await _context.SaveChangesAsync();
-
-        // Send email with OTP
-        await SendOtpEmail(request.Email, otpCode);
-
-        return Ok(new { 
-            message = "Registration successful. Please verify your email with the OTP sent.",
-            email = request.Email
+            message = otpDelivery.EmailSent
+                ? "Registration successful. Please verify your email with the OTP sent."
+                : "Account created, but the verification email could not be sent. Use Resend OTP on the verify page.",
+            email = request.Email,
+            requiresVerification = true,
+            emailSent = otpDelivery.EmailSent
         });
     }
 
-    // POST: api/customerauth/verify-otp
     [HttpPost("verify-otp")]
+    [EnableRateLimiting("otp")]
     public async Task<ActionResult<object>> VerifyOtp([FromBody] VerifyOtpRequest request)
     {
         var otp = await _context.EmailVerificationOtps
@@ -97,25 +121,39 @@ public class CustomerAuthController : ControllerBase
             return BadRequest(new { message = "OTP has expired. Please request a new one." });
         }
 
-        // Mark OTP as used
         otp.Otp_IsUsed = true;
         await _context.SaveChangesAsync();
 
-        // Update customer as verified
         var customer = await _context.Customers
             .FirstOrDefaultAsync(c => c.Customer_Email == request.Email);
 
-        if (customer != null)
+        if (customer == null)
         {
-            customer.IsEmailConfirmed = true;
-            await _context.SaveChangesAsync();
+            return BadRequest(new { message = "Customer account not found." });
         }
 
-        return Ok(new { message = "Email verified successfully. You can now login." });
+        customer.IsEmailConfirmed = true;
+        await _context.SaveChangesAsync();
+
+        var token = GenerateJwtToken(customer);
+
+        return Ok(new
+        {
+            message = "Email verified successfully.",
+            token,
+            customer = new
+            {
+                customer.Customer_Id,
+                customer.Customer_Name,
+                customer.Customer_Email,
+                customer.Customer_Phone,
+                customer.Customer_Address
+            }
+        });
     }
 
-    // POST: api/customerauth/resend-otp
     [HttpPost("resend-otp")]
+    [EnableRateLimiting("otp")]
     public async Task<ActionResult<object>> ResendOtp([FromBody] ResendOtpRequest request)
     {
         var customer = await _context.Customers
@@ -131,7 +169,78 @@ public class CustomerAuthController : ControllerBase
             return BadRequest(new { message = "Email already verified." });
         }
 
-        // Generate new OTP
+        var otpDelivery = await IssueVerificationOtpAsync(request.Email);
+
+        return Ok(new
+        {
+            message = otpDelivery.EmailSent
+                ? "New OTP sent to your email."
+                : "Could not send email right now. If you're running locally, check the API terminal for the verification code.",
+            emailSent = otpDelivery.EmailSent
+        });
+    }
+
+    [HttpPost("login")]
+    [EnableRateLimiting("auth")]
+    public async Task<ActionResult<object>> Login([FromBody] CustomerLoginRequest request)
+    {
+        var customer = await _context.Customers
+            .FirstOrDefaultAsync(c => c.Customer_Email == request.Email);
+
+        if (customer == null)
+        {
+            return Unauthorized(new { message = "Invalid email or password." });
+        }
+
+        if (!customer.IsEmailConfirmed)
+        {
+            return Unauthorized(new
+            {
+                message = "Please verify your email first.",
+                requiresVerification = true,
+                email = customer.Customer_Email
+            });
+        }
+
+        if (!BCrypt.Net.BCrypt.Verify(request.Password, customer.Customer_PasswordHash))
+        {
+            return Unauthorized(new { message = "Invalid email or password." });
+        }
+
+        var token = GenerateJwtToken(customer);
+
+        return Ok(new
+        {
+            message = "Login successful",
+            token,
+            customer = new
+            {
+                customer.Customer_Id,
+                customer.Customer_Name,
+                customer.Customer_Email,
+                customer.Customer_Phone,
+                customer.Customer_Address
+            }
+        });
+    }
+
+    [HttpPost("forgot-password")]
+    [EnableRateLimiting("otp")]
+    public async Task<ActionResult<object>> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        var customer = await _context.Customers
+            .FirstOrDefaultAsync(c => c.Customer_Email == request.Email);
+
+        if (customer == null)
+        {
+            return NotFound(new { message = "No account found with this email. Please check the address or create an account." });
+        }
+
+        if (!customer.IsEmailConfirmed)
+        {
+            return BadRequest(new { message = "Please verify your email before resetting your password." });
+        }
+
         var otpCode = GenerateOtp();
         var otp = new EmailVerificationOtp
         {
@@ -145,139 +254,148 @@ public class CustomerAuthController : ControllerBase
         _context.EmailVerificationOtps.Add(otp);
         await _context.SaveChangesAsync();
 
-        // Send email with OTP
-        await SendOtpEmail(request.Email, otpCode);
+        var body = $@"
+            <html>
+            <body style='font-family: Arial, sans-serif;'>
+                <h2 style='color: #0c1f3d;'>Password Reset</h2>
+                <p>Use this code to reset your password:</p>
+                <div style='background-color: #f0f2f5; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;'>
+                    {otpCode}
+                </div>
+                <p>This code expires in 10 minutes.</p>
+                <p>If you didn't request this, please ignore this email.</p>
+            </body>
+            </html>";
 
-        return Ok(new { message = "New OTP sent to your email." });
+        try
+        {
+            await _emailService.SendEmailAsync(request.Email, "Reset Your Password", body);
+        }
+        catch (Exception)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                message = "Unable to send the reset email right now. Please try again later or contact support."
+            });
+        }
+
+        return Ok(new { message = "A reset code has been sent to your email." });
     }
 
-    // POST: api/customerauth/login
-    [HttpPost("login")]
-    public async Task<ActionResult<object>> Login([FromBody] CustomerLoginRequest request)
+    [HttpPost("reset-password")]
+    [EnableRateLimiting("otp")]
+    public async Task<ActionResult<object>> ResetPassword([FromBody] ResetPasswordRequest request)
     {
+        var otp = await _context.EmailVerificationOtps
+            .FirstOrDefaultAsync(o => o.Otp_Email == request.Email && o.Otp_Code == request.OtpCode && !o.Otp_IsUsed);
+
+        if (otp == null)
+        {
+            return BadRequest(new { message = "Invalid reset code." });
+        }
+
+        if (otp.Otp_ExpiresAt < DateTime.UtcNow)
+        {
+            return BadRequest(new { message = "Reset code has expired. Please request a new one." });
+        }
+
         var customer = await _context.Customers
-            .FirstOrDefaultAsync(c => c.Customer_Email == request.Email);
+            .FirstOrDefaultAsync(c => c.Customer_Email == request.Email && c.IsEmailConfirmed);
 
         if (customer == null)
         {
-            return Unauthorized(new { message = "Invalid email or password." });
+            return BadRequest(new { message = "Account not found." });
         }
 
-        if (!customer.IsEmailConfirmed)
+        otp.Otp_IsUsed = true;
+        customer.Customer_PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        customer.Customer_UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Password reset successfully. You can now sign in." });
+    }
+
+    private static string GenerateOtp()
+    {
+        int otp = RandomNumberGenerator.GetInt32(100000, 1000000);
+        return otp.ToString();
+    }
+
+    private sealed record OtpDeliveryResult(bool EmailSent);
+
+    private async Task<OtpDeliveryResult> IssueVerificationOtpAsync(string email)
+    {
+        var otpCode = GenerateOtp();
+        var otp = new EmailVerificationOtp
         {
-            return Unauthorized(new { message = "Please verify your email first." });
+            Otp_Email = email,
+            Otp_Code = otpCode,
+            Otp_ExpiresAt = DateTime.UtcNow.AddMinutes(10),
+            Otp_IsUsed = false,
+            Otp_CreatedAt = DateTime.UtcNow
+        };
+
+        _context.EmailVerificationOtps.Add(otp);
+        await _context.SaveChangesAsync();
+
+        if (_environment.IsDevelopment())
+        {
+            _logger.LogWarning(
+                "DEV ONLY — Verification OTP for {Email}: {OtpCode} (expires in 10 minutes)",
+                email,
+                otpCode);
         }
 
-        // Verify password
-        if (!BCrypt.Net.BCrypt.Verify(request.Password, customer.Customer_PasswordHash))
-        {
-            return Unauthorized(new { message = "Invalid email or password." });
-        }
+        QueueVerificationEmail(email, otpCode);
 
-        // Generate JWT token
-        var token = GenerateJwtToken(customer);
+        return new OtpDeliveryResult(EmailSent: true);
+    }
 
-        return Ok(new
+    private void QueueVerificationEmail(string email, string otpCode)
+    {
+        _ = Task.Run(async () =>
         {
-            message = "Login successful",
-            token = token,
-            customer = new
+            try
             {
-                customer.Customer_Id,
-                customer.Customer_Name,
-                customer.Customer_Email,
-                customer.Customer_Phone,
-                customer.Customer_Address
+                using var scope = _scopeFactory.CreateScope();
+                var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
+                await SendOtpEmailAsync(emailService, email, otpCode);
+                _logger.LogInformation("Verification email sent to {Email}", email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Background verification email failed for {Email}", email);
             }
         });
     }
 
-    // Helper: Generate 6-digit OTP
-    private string GenerateOtp()
+    private static async Task SendOtpEmailAsync(EmailService emailService, string email, string otpCode)
     {
-        var random = new Random();
-        return random.Next(100000, 999999).ToString();
-    }
-
-    // Helper: Send email with OTP
-    private async Task SendOtpEmail(string email, string otpCode)
-    {
-        var emailSettings = _configuration.GetSection("EmailSettings");
-        var smtpServer = emailSettings["SmtpServer"];
-        var smtpPort = int.Parse(emailSettings["SmtpPort"]);
-        var senderEmail = emailSettings["SenderEmail"];
-        var senderPassword = emailSettings["SenderPassword"];
-        var enableSsl = bool.Parse(emailSettings["EnableSsl"]);
-
-        using var client = new SmtpClient(smtpServer, smtpPort);
-        client.Credentials = new NetworkCredential(senderEmail, senderPassword);
-        client.EnableSsl = enableSsl;
-
-        var subject = "Verify Your Email - MyStore";
         var body = $@"
             <html>
             <body style='font-family: Arial, sans-serif;'>
-                <h2 style='color: #1e3a5f;'>Welcome to MyStore!</h2>
-                <p>Thank you for registering. Please use the following OTP to verify your email:</p>
+                <h2 style='color: #0c1f3d;'>Welcome!</h2>
+                <p>Please use the following OTP to verify your email:</p>
                 <div style='background-color: #f0f2f5; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;'>
                     {otpCode}
                 </div>
                 <p>This OTP will expire in 10 minutes.</p>
                 <p>If you didn't request this, please ignore this email.</p>
-                <hr>
-                <p style='font-size: 12px; color: #666;'>MyStore - Your trusted online store</p>
             </body>
             </html>
         ";
 
-        var mailMessage = new MailMessage(senderEmail, email, subject, body);
-        mailMessage.IsBodyHtml = true;
-
-        await client.SendMailAsync(mailMessage);
+        await emailService.SendEmailAsync(email, "Verify Your Email", body);
     }
 
-// POST: api/customerauth/auto-login-after-verify
-[HttpPost("auto-login-after-verify")]
-public async Task<ActionResult<object>> AutoLoginAfterVerify([FromBody] AutoLoginRequest request)
-{
-    var customer = await _context.Customers
-        .FirstOrDefaultAsync(c => c.Customer_Email == request.Email);
-
-    if (customer == null)
-    {
-        return NotFound(new { message = "Customer not found." });
-    }
-
-    if (!customer.IsEmailConfirmed)
-    {
-        return Unauthorized(new { message = "Email not verified." });
-    }
-
-    // Generate JWT token
-    var token = GenerateJwtToken(customer);
-
-    return Ok(new
-    {
-        message = "Auto-login successful",
-        token = token,
-        customer = new
-        {
-            customer.Customer_Id,
-            customer.Customer_Name,
-            customer.Customer_Email,
-            customer.Customer_Phone,
-            customer.Customer_Address
-        }
-    });
-}
-
-
-    // Helper: Generate JWT token
     private string GenerateJwtToken(Customer customer)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["Secret"] ?? "LebanonEcommerceSecretKey2026ForJWT!!";
+        var secretKey = jwtSettings["Secret"]
+            ?? throw new InvalidOperationException("JWT Secret is missing from configuration.");
         var expirationHours = int.Parse(jwtSettings["ExpirationHours"] ?? "24");
+        var issuer = jwtSettings["Issuer"];
+        var audience = jwtSettings["Audience"];
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -287,10 +405,13 @@ public async Task<ActionResult<object>> AutoLoginAfterVerify([FromBody] AutoLogi
             new Claim(ClaimTypes.NameIdentifier, customer.Customer_Id.ToString()),
             new Claim(ClaimTypes.Name, customer.Customer_Name),
             new Claim(ClaimTypes.Email, customer.Customer_Email),
-            new Claim("CustomerId", customer.Customer_Id.ToString())
+            new Claim("CustomerId", customer.Customer_Id.ToString()),
+            new Claim(ClaimTypes.Role, "Customer")
         };
 
         var token = new JwtSecurityToken(
+            issuer: string.IsNullOrEmpty(issuer) ? null : issuer,
+            audience: string.IsNullOrEmpty(audience) ? null : audience,
             expires: DateTime.UtcNow.AddHours(expirationHours),
             signingCredentials: credentials,
             claims: claims
@@ -298,36 +419,4 @@ public async Task<ActionResult<object>> AutoLoginAfterVerify([FromBody] AutoLogi
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
-}
-
-// Request DTOs
-public class CustomerRegisterRequest
-{
-    public string Name { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-    public string Phone { get; set; } = string.Empty;
-    public string? Address { get; set; }
-}
-
-public class CustomerLoginRequest
-{
-    public string Email { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-}
-
-public class VerifyOtpRequest
-{
-    public string Email { get; set; } = string.Empty;
-    public string OtpCode { get; set; } = string.Empty;
-}
-
-public class ResendOtpRequest
-{
-    public string Email { get; set; } = string.Empty;
-}
-
-public class AutoLoginRequest
-{
-    public string Email { get; set; } = string.Empty;
 }

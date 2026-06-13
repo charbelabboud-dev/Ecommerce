@@ -20,7 +20,7 @@ public class UploadController : ControllerBase
     }
 
     // POST: api/upload/product-image
-    [Authorize]
+    [Authorize (Roles = "Admin")]
     [HttpPost("product-image")]
     public async Task<ActionResult<ProductImage>> UploadProductImage([FromForm] UploadImageRequest request)
     {
@@ -120,7 +120,7 @@ public class UploadController : ControllerBase
     }
 
     // DELETE: api/upload/delete-image/{id}
-    [Authorize]
+    [Authorize (Roles = "Admin")]
     [HttpDelete("delete-image/{id}")]
     public async Task<IActionResult> DeleteProductImage(int id)
     {
