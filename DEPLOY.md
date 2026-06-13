@@ -1,6 +1,6 @@
 # Hosting guide (phase-1-postgres)
 
-Free stack: **Neon** (Postgres) + **Render** (API) + **Vercel** (storefront + admin).
+Free stack: **Neon** (Postgres) + **Render** (API) + **Cloudflare Pages** (storefront + admin).
 
 Branch to deploy: `phase-1-postgres`  
 Repo: https://github.com/charbelabboud-dev/Ecommerce
@@ -78,43 +78,54 @@ Render **free tier** has ephemeral disk — product images are lost on redeploy.
 
 ---
 
-## 3. Frontends — Vercel (free)
+## 3. Frontends — Cloudflare Pages (free)
 
-Create **two** Vercel projects from the same repo: https://vercel.com/new
+Create **two** Pages projects: https://dash.cloudflare.com → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
 
 ### Storefront
 
-1. **Import** `charbelabboud-dev/Ecommerce`
-2. **Root Directory** → Edit → `ecommerce-storefront`
-3. **Branch** → `phase-1-postgres`
-4. **Framework Preset** → Create React App (auto-detected)
-5. **Environment Variables** → add:
+1. Connect GitHub → select `charbelabboud-dev/Ecommerce`
+2. **Project name** → e.g. `primeplus-storefront`
+3. **Production branch** → `phase-1-postgres`
+4. **Build settings:**
+
+| Setting | Value |
+|---------|-------|
+| Framework preset | None (or Create React App) |
+| Build command | `npm ci && npm run build` |
+| Build output directory | `build` |
+| Root directory (path) | `ecommerce-storefront` |
+
+5. **Environment variables** → **Add variable**:
 
 | Name | Value |
 |------|-------|
 | `REACT_APP_API_URL` | `https://ecommerce.onrender.com` |
 
-6. Deploy
+6. **Save and Deploy**
 
 ### Admin
 
-Repeat with a **new** Vercel project:
+Create a **second** Pages project (same repo):
 
 | Setting | Value |
 |---------|-------|
-| Root Directory | `ecommerce-admin` |
-| Branch | `phase-1-postgres` |
+| Project name | e.g. `primeplus-admin` |
+| Production branch | `phase-1-postgres` |
+| Build command | `npm ci && npm run build` |
+| Build output directory | `build` |
+| Root directory | `ecommerce-admin` |
 | Env var | `REACT_APP_API_URL` = `https://ecommerce.onrender.com` |
 
-`vercel.json` in each app handles SPA routing (React Router).
+`public/_redirects` in each app handles SPA routing (React Router).
 
-After deploy, note both URLs (e.g. `https://ecommerce-storefront.vercel.app`).
+After deploy, note both URLs (e.g. `https://primeplus-storefront.pages.dev`).
 
 ---
 
 ## 4. Wire CORS (required)
 
-After Vercel gives you URLs (e.g. `https://ecommerce-storefront.vercel.app`):
+After Cloudflare gives you URLs (e.g. `https://primeplus-storefront.pages.dev`):
 
 1. Render dashboard → **Ecommerce** (API) → Environment
 2. Set:
