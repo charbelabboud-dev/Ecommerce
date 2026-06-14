@@ -73,14 +73,22 @@
   background: white;
   border-radius: 12px;
   border: 1px solid var(--color-border);
-  overflow-x: auto;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .categories-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 700px;          /* ensures decent width on desktop */
+}
+
+@media (min-width: 768px) {
+  .categories-table {
+    min-width: 700px;
+  }
+
+  .categories-table-container {
+    overflow-x: auto;
+  }
 }
 
 .categories-table th,
@@ -152,9 +160,28 @@
 }
 
 /* ---------- MOBILE CARD LAYOUT ---------- */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .categories-container {
     padding: 12px;
+    overflow-x: hidden;
+  }
+
+  .categories-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-left {
+    flex-wrap: wrap;
+  }
+
+  .header-left h1 {
+    font-size: 20px;
+  }
+
+  .add-button {
+    width: 100%;
+    text-align: center;
   }
 
   .categories-table-container {
@@ -164,18 +191,16 @@
     border: none;
   }
 
-  /* Hide table header */
   .categories-table thead {
     display: none;
   }
 
-  /* Convert rows to cards */
   .categories-table,
   .categories-table tbody,
-  .categories-table tr,
-  .categories-table td {
+  .categories-table tr {
     display: block;
     width: 100%;
+    min-width: 0;
   }
 
   .categories-table tr {
@@ -183,47 +208,80 @@
     border: 1px solid var(--color-border);
     border-radius: 12px;
     margin-bottom: 16px;
-    padding: 12px;
+    padding: 12px 14px;
+    box-sizing: border-box;
   }
 
   .categories-table td {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0;
+    padding: 10px 0;
     border-bottom: 1px solid var(--color-border);
-    gap: 8px;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .categories-table td:last-child {
     border-bottom: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
 
-  /* Labels from data-label attribute */
   .categories-table td::before {
     content: attr(data-label);
     font-weight: 600;
-    color: var(--color-primary);
-    width: 40%;
-    flex-shrink: 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    flex: 0 0 auto;
+    min-width: 90px;
+    max-width: 45%;
   }
 
-  /* Value spans */
   .categories-table td .cell-value,
   .categories-table td .status-badge {
-    width: 55%;
+    flex: 1;
+    min-width: 0;
     text-align: right;
     word-break: break-word;
   }
 
-  /* Action buttons on mobile – keep inline */
-  .categories-table td:last-child {
-    flex-wrap: wrap;
-    justify-content: flex-start;
+  .categories-table td.actions-cell,
+  .categories-table td[data-label="Actions"] {
+    flex-direction: column;
+    align-items: stretch;
     gap: 8px;
   }
-  .edit-btn, .delete-btn {
+
+  .categories-table td.actions-cell::before,
+  .categories-table td[data-label="Actions"]::before {
+    margin-bottom: 4px;
+  }
+
+  .categories-table td.actions-cell .edit-btn,
+  .categories-table td.actions-cell .delete-btn,
+  .categories-table td[data-label="Actions"] .edit-btn,
+  .categories-table td[data-label="Actions"] .delete-btn {
+    width: 100%;
     margin: 0;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .categories-table td.no-data {
+    display: block;
+    text-align: center;
+    border-bottom: none;
+  }
+
+  .categories-table td.no-data::before {
+    content: none;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -176,7 +176,7 @@ const handleDelete = async (id, name) => {
             {category.category_IsActive ? 'Active' : 'Inactive'}
           </span>
         </td>
-        <td data-label="Actions">
+        <td data-label="Actions" className="actions-cell">
           <button className="edit-btn" onClick={() => handleOpenModal(category)}>Edit</button>
           <button className="delete-btn" onClick={() => handleDelete(category.category_Id, category.category_Name)}>Delete</button>
         </td>
