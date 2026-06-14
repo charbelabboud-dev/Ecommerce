@@ -285,7 +285,7 @@
   }
 }
 
-/* ---------- MODAL STYLES (unchanged, kept for completeness) ---------- */
+/* Modal + form styles shared with Categories page */
 .modal-overlay {
   position: fixed;
   top: 0;

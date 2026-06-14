@@ -234,7 +234,7 @@
 }
 
 /* Mobile Responsive */
-@media (max-width: 600px) {
+@media (max-width: 767px) {
   .modal-content {
     width: 95%;
     max-height: 95vh;

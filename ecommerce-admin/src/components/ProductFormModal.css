@@ -330,7 +330,7 @@ form {
 }
 
 /* Mobile Responsive */
-@media (max-width: 600px) {
+@media (max-width: 767px) {
   .modal-content {
     width: 95%;
     max-height: 95vh;
@@ -351,6 +351,10 @@ form {
   .form-row {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+
+  .form-row .checkbox {
+    margin-bottom: 12px;
   }
   
   .form-group {

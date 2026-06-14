@@ -228,8 +228,9 @@ const handleDelete = async (id, name) => {
                   min="0"
                   max="100"
                   step="0.01"
-                  placeholder="e.g. 10 — applies to all products in this category"
+                  placeholder="e.g. 10"
                 />
+                <small className="field-hint">Applies to all products in this category</small>
               </div>
               <div className="form-row">
                 <div className="form-group">
@@ -250,7 +251,7 @@ const handleDelete = async (id, name) => {
                       checked={formData.category_IsActive}
                       onChange={handleChange}
                     />
-                    Active (visible to customers)
+                    Visible to customers
                   </label>
                 </div>
               </div>

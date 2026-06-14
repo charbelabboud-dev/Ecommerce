@@ -306,9 +306,9 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
               min="0"
               max="100"
               step="0.01"
-              placeholder="e.g. 15 — leave empty for no product discount"
+              placeholder="e.g. 15"
             />
-            <span className="upload-hint">Overrides category discount when set. Category discount applies if this is empty.</span>
+            <small className="field-hint">Leave empty to use the category discount only.</small>
           </div>
 
           <div className="form-group">

@@ -115,3 +115,171 @@
 .status-badge.shipped { background: #eef2ff; color: #4338ca; }
 .status-badge.delivered { background: var(--color-success-bg); color: var(--color-success); }
 .status-badge.cancelled { background: var(--color-danger-bg); color: var(--color-danger-dark); }
+
+/* Shared form helpers */
+.field-hint,
+.upload-hint,
+.image-hint,
+.form-group small {
+  display: block;
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.45;
+  word-wrap: break-word;
+}
+
+/* ---------- ADMIN MOBILE (global) ---------- */
+@media (max-width: 767px) {
+  .admin-page,
+  .categories-container,
+  .products-container,
+  .orders-container,
+  .settings-container,
+  .dashboard-container,
+  .reviews-container {
+    padding: 12px;
+  }
+
+  .header-left h1,
+  .dashboard-header h1 {
+    font-size: 1.25rem;
+    line-height: 1.3;
+  }
+
+  .categories-header,
+  .products-header,
+  .orders-header,
+  .settings-header,
+  .dashboard-header,
+  .reviews-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .header-left {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .header-buttons,
+  .products-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .header-buttons button,
+  .add-button,
+  .admin-btn-primary,
+  .logout-button,
+  .settings-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .search-box {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .search-input,
+  .admin-input,
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    font-size: 16px;
+    width: 100%;
+    min-width: 0;
+    padding: 12px;
+  }
+
+  .form-group label {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    margin-bottom: 6px;
+  }
+
+  .form-group input::placeholder,
+  .form-group textarea::placeholder,
+  .search-input::placeholder {
+    font-size: 14px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .form-row .form-group {
+    margin-bottom: 16px;
+  }
+
+  .checkbox {
+    align-items: flex-start;
+    width: 100%;
+    min-height: auto;
+    padding: 4px 0;
+  }
+
+  .checkbox label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    white-space: normal;
+  }
+
+  .checkbox input,
+  .checkbox input[type="checkbox"] {
+    flex-shrink: 0;
+    margin-top: 2px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .modal-overlay {
+    padding: 12px;
+    align-items: center;
+  }
+
+  .modal-content {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100dvh - 24px);
+    border-radius: 12px;
+  }
+
+  .modal-header {
+    padding: 14px 16px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.125rem;
+    line-height: 1.3;
+    padding-right: 8px;
+  }
+
+  .modal-content form,
+  .modal-content .modal-body {
+    padding: 16px;
+  }
+
+  .save-btn,
+  .save-settings-btn {
+    font-size: 1rem;
+    padding: 12px 16px;
+  }
+
+  .settings-form {
+    padding: 16px;
+  }
+
+  .form-section h3 {
+    font-size: 1rem;
+  }
+}
