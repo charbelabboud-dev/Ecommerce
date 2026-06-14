@@ -22,8 +22,6 @@ function Register() {
     address: ''
   });
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const handleChange = (e) => {
     setFormData({
@@ -76,25 +74,6 @@ const handleSubmit = async (e) => {
     setLoading(false);
   }
 };
-
-  if (success) {
-    return (
-      <div className="register-page">
-        <div className="register-success">
-          <div className="success-icon">✓</div>
-          <h2>Registration Successful!</h2>
-          <p>We've sent a verification code to <strong>{registeredEmail}</strong></p>
-          <p>Please enter the 6-digit OTP to verify your email.</p>
-          <Link to={`/verify-otp?email=${encodeURIComponent(registeredEmail)}`} className="verify-btn">
-            Verify Email
-          </Link>
-          <Link to="/login" className="login-link">
-            Back to Login
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="register-page">

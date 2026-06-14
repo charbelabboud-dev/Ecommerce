@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { getWishlist, removeFromWishlist } from '../services/wishlistApi';
@@ -13,6 +13,13 @@ function Wishlist() {
   const { addToCart: addToCartContext } = useCart();
   const { addToast } = useToast();
 
+  const fetchWishlist = useCallback(async () => {
+    setLoading(true);
+    const items = await getWishlist();
+    setWishlistItems(items);
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem('customerToken');
     if (!token) {
@@ -21,14 +28,7 @@ function Wishlist() {
       return;
     }
     fetchWishlist();
-  }, [navigate]);
-
-  const fetchWishlist = async () => {
-    setLoading(true);
-    const items = await getWishlist();
-    setWishlistItems(items);
-    setLoading(false);
-  };
+  }, [navigate, addToast, fetchWishlist]);
 
   const handleRemove = async (productId) => {
     await removeFromWishlist(productId);

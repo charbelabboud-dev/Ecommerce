@@ -17,7 +17,7 @@ function Cart() {
       navigate('/login');
       return;
     }
-  }, [navigate]);
+  }, [navigate, addToast]);
 
   const getPrice = (item) => formatProductPrice(item);
 

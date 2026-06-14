@@ -46,6 +46,7 @@ function ProductDetail() {
     setActiveTab('description');
     setQuantity(1);
     fetchProduct();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {
@@ -55,6 +56,7 @@ function ProductDetail() {
       fetchRating();
       checkWishlistStatus();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product]);
 
   const fetchProduct = async () => {

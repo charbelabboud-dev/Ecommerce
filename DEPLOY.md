@@ -92,7 +92,7 @@ Create **two** Pages projects: https://dash.cloudflare.com → **Workers & Pages
 | Setting | Value |
 |---------|-------|
 | Framework preset | None (or Create React App) |
-| Build command | `npm ci && npm run build` |
+| Build command | `npm install && npm run build` |
 | Build output directory | `build` |
 | Root directory (path) | `ecommerce-storefront` |
 
@@ -101,6 +101,9 @@ Create **two** Pages projects: https://dash.cloudflare.com → **Workers & Pages
 | Name | Value |
 |------|-------|
 | `REACT_APP_API_URL` | `https://ecommerce.onrender.com` |
+| `SKIP_DEPENDENCY_INSTALL` | `1` |
+
+> Cloudflare auto-runs `npm ci` before your build command. `SKIP_DEPENDENCY_INSTALL=1` skips that step so `npm install` in the build command can run instead.
 
 6. **Save and Deploy**
 
@@ -112,7 +115,7 @@ Create a **second** Pages project (same repo):
 |---------|-------|
 | Project name | e.g. `primeplus-admin` |
 | Production branch | `phase-1-postgres` |
-| Build command | `npm ci && npm run build` |
+| Build command | `npm install && npm run build` |
 | Build output directory | `build` |
 | Root directory | `ecommerce-admin` |
 | Env var | `REACT_APP_API_URL` = `https://ecommerce.onrender.com` |

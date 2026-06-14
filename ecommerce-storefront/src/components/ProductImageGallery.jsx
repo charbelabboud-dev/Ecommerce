@@ -55,7 +55,7 @@ function ProductImageGallery({ images = [], productName = 'Product', discount })
       <div className="gallery-main">
         <img
           src={getImageUrl(activeImage.productImage_ImageUrl)}
-          alt={`${productName} - photo ${activeIndex + 1}`}
+          alt={`${productName} ${activeIndex + 1}`}
           className="gallery-main-img"
         />
 

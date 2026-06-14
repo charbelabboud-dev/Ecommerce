@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { addToWishlist, removeFromWishlist, checkInWishlist } from '../services/wishlistApi';
@@ -19,17 +19,17 @@ function ProductCard({ product }) {
   const [isInWishlist, setIsInWishlist] = useState(false);
   const navigate = useNavigate();
 
+  const checkWishlistStatus = useCallback(async () => {
+    const inWishlist = await checkInWishlist(product.product_Id);
+    setIsInWishlist(inWishlist);
+  }, [product.product_Id]);
+
   useEffect(() => {
     const token = localStorage.getItem('customerToken');
     if (token) {
       checkWishlistStatus();
     }
-  }, [product.product_Id]);
-
-  const checkWishlistStatus = async () => {
-    const inWishlist = await checkInWishlist(product.product_Id);
-    setIsInWishlist(inWishlist);
-  };
+  }, [checkWishlistStatus]);
 
   const handleAddToCart = (e) => {
     e.preventDefault();
