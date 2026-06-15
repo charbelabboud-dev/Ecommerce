@@ -20,19 +20,24 @@ function AdminReviews() {
 
   const fetchReviews = async () => {
     setLoading(true);
+
     try {
-      const [pendingRes, approvedRes] = await Promise.all([
-        API.get('/reviews/pending'),
-        API.get('/reviews/approved'),
-      ]);
+      const pendingRes = await API.get('/reviews/pending');
       setPendingReviews(pendingRes.data);
+    } catch (error) {
+      console.error('Error fetching pending reviews:', error);
+      addToast('Failed to load pending reviews', 'error');
+    }
+
+    try {
+      const approvedRes = await API.get('/reviews/approved-list');
       setApprovedReviews(approvedRes.data);
     } catch (error) {
-      console.error('Error fetching reviews:', error);
-      addToast('Failed to load reviews', 'error');
-    } finally {
-      setLoading(false);
+      console.error('Error fetching approved reviews:', error);
+      addToast('Failed to load approved reviews', 'error');
     }
+
+    setLoading(false);
   };
 
   const handleApprove = async (reviewId) => {

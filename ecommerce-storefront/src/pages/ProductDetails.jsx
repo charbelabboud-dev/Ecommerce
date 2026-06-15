@@ -494,17 +494,15 @@ function ProductDetail() {
         {/* Related Products */}
         <div className="related-products">
           <h3>You Might Also Like</h3>
-          <div className="related-grid">
-            {relatedProducts.length === 0 ? (
-              <p className="coming-soon">More products coming soon...</p>
-            ) : (
-              <div className="products-grid">
-                {relatedProducts.map(relatedProduct => (
-                  <ProductCard key={relatedProduct.product_Id} product={relatedProduct} />
-                ))}
-              </div>
-            )}
-          </div>
+          {relatedProducts.length === 0 ? (
+            <p className="coming-soon">More products coming soon...</p>
+          ) : (
+            <div className="related-grid">
+              {relatedProducts.map(relatedProduct => (
+                <ProductCard key={relatedProduct.product_Id} product={relatedProduct} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

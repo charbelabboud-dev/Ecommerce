@@ -1123,7 +1123,15 @@
 }
 
 .related-grid {
-  min-height: 100px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 300px));
+  gap: 24px;
+  justify-content: start;
+}
+
+.related-grid .product-card {
+  width: 100%;
+  max-width: 300px;
 }
 
 .coming-soon {

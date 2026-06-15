@@ -70,9 +70,9 @@ public class ReviewsController : ControllerBase
         return Ok(reviews);
     }
 
-    // GET: api/reviews/approved (Admin only)
+    // GET: api/reviews/approved-list (Admin only)
     [Authorize(Roles = "Admin")]
-    [HttpGet("approved")]
+    [HttpGet("approved-list")]
     public async Task<ActionResult<IEnumerable<Review>>> GetApprovedReviews()
     {
         var reviews = await _context.Reviews
@@ -86,7 +86,7 @@ public class ReviewsController : ControllerBase
 
     // PUT: api/reviews/5/approve (Admin only)
     [Authorize (Roles = "Admin")]
-    [HttpPut("{id}/approve")]
+    [HttpPut("{id:int}/approve")]
     public async Task<IActionResult> ApproveReview(int id)
     {
         var review = await _context.Reviews.FindAsync(id);
@@ -103,7 +103,7 @@ public class ReviewsController : ControllerBase
 
     // DELETE: api/reviews/5 (Admin only)
     [Authorize (Roles = "Admin")]
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteReview(int id)
     {
         var review = await _context.Reviews.FindAsync(id);
