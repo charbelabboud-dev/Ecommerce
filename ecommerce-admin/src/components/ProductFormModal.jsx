@@ -25,7 +25,17 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
   const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [productImages, setProductImages] = useState([]);
+  const [pendingImages, setPendingImages] = useState([]);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [createdProduct, setCreatedProduct] = useState(null);
+
+  const activeProduct = product || createdProduct;
+
+  const clearPendingImages = (images) => {
+    const toClear = images ?? pendingImages;
+    toClear.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+    setPendingImages([]);
+  };
 
   // Fetch categories
   useEffect(() => {
@@ -47,11 +57,16 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
     } else {
       setProductImages([]);
     }
+    if (!product) {
+      setCreatedProduct(null);
+    }
   }, [product]);
 
   const fetchProductImages = async () => {
+    const productId = activeProduct?.product_Id;
+    if (!productId) return;
     try {
-      const response = await API.get(`/upload/product-images/${product.product_Id}`);
+      const response = await API.get(`/upload/product-images/${productId}`);
       setProductImages(response.data);
     } catch (error) {
       console.error('Error fetching images:', error);
@@ -96,6 +111,10 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
       setCurrency('USD');
       setImageFile(null);
       setProductImages([]);
+      setPendingImages((prev) => {
+        prev.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+        return [];
+      });
     }
   }, [product]);
 
@@ -125,8 +144,13 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
-    if (!product?.product_Id) {
-      addToast('Save the product first, then upload images', 'error');
+    if (!activeProduct?.product_Id) {
+      const newPending = files.map((file) => ({
+        id: `${file.name}-${file.lastModified}-${Math.random()}`,
+        file,
+        previewUrl: URL.createObjectURL(file)
+      }));
+      setPendingImages((prev) => [...prev, ...newPending]);
       e.target.value = '';
       return;
     }
@@ -136,12 +160,12 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
 
     try {
       for (let i = 0; i < files.length; i++) {
-        const formData = new FormData();
-        formData.append('productId', product.product_Id);
-        formData.append('image', files[i]);
-        formData.append('isMain', productImages.length === 0 && i === 0);
+        const uploadData = new FormData();
+        uploadData.append('productId', activeProduct.product_Id);
+        uploadData.append('image', files[i]);
+        uploadData.append('isMain', productImages.length === 0 && i === 0);
 
-        await API.post('/upload/product-image', formData, {
+        await API.post('/upload/product-image', uploadData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         uploaded++;
@@ -155,6 +179,27 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
     } finally {
       setUploadingImage(false);
       e.target.value = '';
+    }
+  };
+
+  const handleRemovePendingImage = (imageId) => {
+    setPendingImages((prev) => {
+      const removed = prev.find((img) => img.id === imageId);
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return prev.filter((img) => img.id !== imageId);
+    });
+  };
+
+  const uploadPendingImages = async (productId, images, existingImageCount = 0) => {
+    for (let i = 0; i < images.length; i++) {
+      const uploadData = new FormData();
+      uploadData.append('productId', productId);
+      uploadData.append('image', images[i].file);
+      uploadData.append('isMain', existingImageCount === 0 && i === 0);
+
+      await API.post('/upload/product-image', uploadData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
     }
   };
 
@@ -203,17 +248,60 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
         ? Math.min(100, Math.max(0, parseFloat(formData.product_DiscountPercent)))
         : null
     };
-    if (product) submitData.product_Id = product.product_Id;
+    if (activeProduct) submitData.product_Id = activeProduct.product_Id;
 
-    await onSave(submitData);
-    setLoading(false);
+    const isNewProduct = !product && !createdProduct;
+    const isCreateFlow = !product;
+    let uploadFailed = false;
+
+    try {
+      const savedProduct = await onSave(submitData);
+
+      if (isNewProduct && savedProduct?.product_Id) {
+        setCreatedProduct(savedProduct);
+      }
+
+      if (isNewProduct && pendingImages.length > 0 && savedProduct?.product_Id) {
+        const imagesToUpload = [...pendingImages];
+        const imageCount = imagesToUpload.length;
+        setUploadingImage(true);
+        try {
+          await uploadPendingImages(savedProduct.product_Id, imagesToUpload);
+          clearPendingImages(imagesToUpload);
+          addToast(
+            `Product created with ${imageCount} image${imageCount > 1 ? 's' : ''}`,
+            'success'
+          );
+        } catch (error) {
+          uploadFailed = true;
+          addToast('Product saved, but image upload failed. Try uploading again.', 'error');
+          onRefresh?.();
+          setLoading(false);
+          setUploadingImage(false);
+          return;
+        }
+        setUploadingImage(false);
+      } else if (isNewProduct) {
+        addToast('Product created successfully', 'success');
+      }
+
+      if (isCreateFlow && !uploadFailed) {
+        onRefresh?.();
+        onClose();
+      }
+    } catch (error) {
+      // Error toast is handled in parent
+    } finally {
+      setLoading(false);
+      setUploadingImage(false);
+    }
   };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{product ? 'Edit Product' : 'Add New Product'}</h2>
+          <h2>{activeProduct ? 'Edit Product' : 'Add New Product'}</h2>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
         <form onSubmit={handleSubmit}>
@@ -233,10 +321,11 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
 
           {/* Multi‑image manager */}
           <div className="form-group">
-            <label>Product Images {productImages.length > 0 && `(${productImages.length})`}</label>
-            {!product?.product_Id && (
-              <p className="image-hint">Save the product first — the form will stay open so you can add multiple photos.</p>
-            )}
+            <label>
+              Product Images
+              {(productImages.length + pendingImages.length) > 0 &&
+                ` (${productImages.length + pendingImages.length})`}
+            </label>
             <div className="image-manager">
               <div className="current-images">
                 {productImages.map(img => (
@@ -251,9 +340,20 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
                     {img.productImage_IsMain && <span className="main-badge">Main</span>}
                   </div>
                 ))}
+                {pendingImages.map((img, index) => (
+                  <div key={img.id} className="image-item image-item--pending">
+                    <img src={img.previewUrl} alt="" />
+                    <div className="image-actions">
+                      <button type="button" className="delete-img" onClick={() => handleRemovePendingImage(img.id)}>🗑️</button>
+                    </div>
+                    {index === 0 && productImages.length === 0 && (
+                      <span className="main-badge">Main</span>
+                    )}
+                  </div>
+                ))}
               </div>
               <div className="upload-new">
-                <input type="file" accept="image/*" multiple onChange={handleImageUpload} disabled={uploadingImage || !product?.product_Id} />
+                <input type="file" accept="image/*" multiple onChange={handleImageUpload} disabled={uploadingImage} />
                 <span className="upload-hint">Select multiple images at once (JPG, PNG, WebP — max 5MB each)</span>
                 {uploadingImage && <span>Uploading...</span>}
               </div>
@@ -330,7 +430,7 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
           </div>
 
           <button type="submit" className="save-btn" disabled={loading || uploadingImage}>
-            {loading ? 'Saving...' : (product ? 'Update' : 'Create')}
+            {loading ? 'Saving...' : (activeProduct ? 'Update' : 'Create')}
           </button>
         </form>
       </div>

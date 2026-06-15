@@ -108,25 +108,29 @@ const handleDelete = async (id, productName) => {
 
   const handleSaveProduct = async (productData) => {
     try {
-      if (editingProduct) {
+      const productId = editingProduct?.product_Id || productData.product_Id;
+
+      if (productId) {
         const updateData = {
           ...productData,
-          product_Id: editingProduct.product_Id
+          product_Id: productId
         };
-        
-        await API.put(`/products/${editingProduct.product_Id}`, updateData);
+
+        await API.put(`/products/${productId}`, updateData);
         addToast("Product updated successfully", "success");
         handleCloseModal();
-      } else {
-        const response = await API.post("/products", productData);
-        addToast("Product created! Add one or more images below.", "success");
-        setEditingProduct(response.data);
+        fetchProducts();
+        return updateData;
       }
+
+      const response = await API.post("/products", productData);
       fetchProducts();
+      return response.data;
     } catch (error) {
       console.error("Error saving product:", error);
       const errorMessage = error.response?.data || "Failed to save product";
       addToast(errorMessage, "error");
+      throw error;
     }
   };
 

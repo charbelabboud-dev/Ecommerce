@@ -59,7 +59,7 @@ function ProductImageGallery({ images = [], productName = 'Product', discount })
           className="gallery-main-img"
         />
 
-        {discount && <div className="gallery-discount">-{discount}%</div>}
+        {discount > 0 && <div className="gallery-discount">-{discount}%</div>}
 
         {hasMultiple && (
           <>
