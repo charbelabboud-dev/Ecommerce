@@ -11,7 +11,8 @@ import {
   getEffectiveDiscountPercent,
   hasDiscount,
   formatProductPrice,
-  formatOriginalProductPrice
+  formatStrikethroughPrice,
+  shouldShowStrikethrough
 } from '../utils/pricing';
 
 function ProductDetail() {
@@ -236,8 +237,8 @@ function ProductDetail() {
 
             <div className="product-pricing">
               <div className="current-price">{formatProductPrice(product)}</div>
-              {onSale && (
-                <div className="original-price">{formatOriginalProductPrice(product)}</div>
+              {shouldShowStrikethrough(product) && (
+                <div className="original-price">{formatStrikethroughPrice(product)}</div>
               )}
             </div>
 

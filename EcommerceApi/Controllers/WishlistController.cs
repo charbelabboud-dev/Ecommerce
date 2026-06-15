@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using EcommerceApi.Data;
 using EcommerceApi.Models;
+using EcommerceApi.Services;
 using System.Security.Claims;
 
 namespace EcommerceApi.Controllers;
@@ -33,9 +34,19 @@ public class WishlistController : ControllerBase
 
         var wishlist = await _context.Wishlists
             .Include(w => w.Product)
-            .ThenInclude(p => p.ProductImages)
+                .ThenInclude(p => p.ProductImages)
+            .Include(w => w.Product)
+                .ThenInclude(p => p.Category)
             .Where(w => w.Wishlist_CustomerId == customerId)
             .ToListAsync();
+
+        foreach (var item in wishlist)
+        {
+            if (item.Product != null)
+            {
+                DiscountHelper.ApplyDiscountFields(item.Product);
+            }
+        }
 
         return Ok(wishlist);
     }

@@ -107,6 +107,25 @@
   color: var(--color-primary);
 }
 
+.stat-number--currency {
+  font-size: 32px;
+}
+
+.stat-number--warning {
+  color: #ed6c02;
+}
+
+.stat-subtext {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.stat-card--sales .stat-number {
+  color: #15803d;
+}
+
 /* Dashboard Navigation */
 .dashboard-nav {
   display: flex;
@@ -114,6 +133,104 @@
   justify-content: flex-start;
   flex-wrap: wrap;
   margin-top: 16px;
+}
+
+.nav-button-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.nav-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  background: #e53935;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+}
+
+/* Dashboard alert cards */
+.dashboard-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.alert-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.alert-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.alert-card--orders {
+  border-left: 4px solid #2563eb;
+}
+
+.alert-card--reviews {
+  border-left: 4px solid #7c3aed;
+}
+
+.alert-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.alert-card-icon {
+  font-size: 24px;
+}
+
+.alert-card-info {
+  flex: 1;
+}
+
+.alert-card-info h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.alert-card-info p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.alert-card-badge {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  background: #e53935;
+  color: white;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nav-button {

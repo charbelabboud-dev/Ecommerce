@@ -70,6 +70,20 @@ public class ReviewsController : ControllerBase
         return Ok(reviews);
     }
 
+    // GET: api/reviews/approved (Admin only)
+    [Authorize(Roles = "Admin")]
+    [HttpGet("approved")]
+    public async Task<ActionResult<IEnumerable<Review>>> GetApprovedReviews()
+    {
+        var reviews = await _context.Reviews
+            .Where(r => r.Review_IsApproved == true)
+            .Include(r => r.Product)
+            .OrderByDescending(r => r.Review_CreatedAt)
+            .ToListAsync();
+
+        return Ok(reviews);
+    }
+
     // PUT: api/reviews/5/approve (Admin only)
     [Authorize (Roles = "Admin")]
     [HttpPut("{id}/approve")]

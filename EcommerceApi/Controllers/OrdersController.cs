@@ -23,9 +23,16 @@ public class OrdersController : ControllerBase
         _emailService = emailService;
     }
 
+    [Authorize(Roles = "Customer")]
     [HttpPost]
     public async Task<ActionResult<Order>> CreateOrder([FromBody] CreateOrderDto dto)
     {
+        var customerIdClaim = User.FindFirst("CustomerId");
+        if (customerIdClaim == null)
+        {
+            return Unauthorized(new { message = "Please login to place an order." });
+        }
+
         using var transaction = await _context.Database.BeginTransactionAsync();
 
         try
@@ -65,11 +72,7 @@ public class OrdersController : ControllerBase
                 }).ToList()
             };
 
-            var customerIdClaim = User.FindFirst("CustomerId");
-            if (customerIdClaim != null)
-            {
-                order.Order_CustomerId = int.Parse(customerIdClaim.Value);
-            }
+            order.Order_CustomerId = int.Parse(customerIdClaim.Value);
 
             order.Order_Number = await GenerateOrderNumberAsync();
             order.Order_AdminUserId = admin.AdminUser_Id;
@@ -140,33 +143,6 @@ public class OrdersController : ControllerBase
         var orders = await _context.Orders
             .Where(o => o.Order_CustomerId == customerId)
             .Include(o => o.OrderItems)
-            .OrderByDescending(o => o.Order_CreatedAt)
-            .ToListAsync();
-
-        return Ok(orders);
-    }
-
-    [HttpGet("lookup")]
-    [EnableRateLimiting("lookup")]
-    public async Task<ActionResult<IEnumerable<Order>>> LookupOrders([FromQuery] string? phone, [FromQuery] string? email)
-    {
-        if (string.IsNullOrWhiteSpace(phone) && string.IsNullOrWhiteSpace(email))
-        {
-            return BadRequest(new { message = "Please provide either phone number or email." });
-        }
-
-        IQueryable<Order> query = _context.Orders.Include(o => o.OrderItems);
-
-        if (!string.IsNullOrWhiteSpace(phone))
-        {
-            query = query.Where(o => o.Order_CustomerPhone == phone.Trim());
-        }
-        else
-        {
-            query = query.Where(o => o.Order_CustomerEmail == email!.Trim());
-        }
-
-        var orders = await query
             .OrderByDescending(o => o.Order_CreatedAt)
             .ToListAsync();
 

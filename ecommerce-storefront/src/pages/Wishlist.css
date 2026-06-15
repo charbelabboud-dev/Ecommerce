@@ -122,11 +122,26 @@
   color: var(--color-primary);
 }
 
+.wishlist-price-row {
+  margin-bottom: 15px;
+}
+
 .wishlist-price {
   font-size: 18px;
   font-weight: 700;
   color: var(--color-primary);
-  margin-bottom: 15px;
+  margin: 0;
+}
+
+.wishlist-price--sale {
+  color: #c62828;
+}
+
+.wishlist-price-original {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  margin: 4px 0 0;
 }
 
 /* Stock Status - Consistent with Product Card */

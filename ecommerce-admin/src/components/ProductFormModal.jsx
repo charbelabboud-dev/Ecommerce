@@ -18,7 +18,9 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
     product_IsFeatured: false,
     product_CategoryId: '',
     product_ShippingFee: '',
-    product_DiscountPercent: ''
+    product_DiscountPercent: '',
+    product_CompareAtPriceUSD: '',
+    product_CompareAtPriceLBP: ''
   });
   const [loading, setLoading] = useState(false);
   const [currency, setCurrency] = useState('USD');
@@ -88,7 +90,9 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
         product_IsFeatured: product.product_IsFeatured || false,
         product_CategoryId: product.product_CategoryId || '',
         product_ShippingFee: product.product_ShippingFee || '',
-        product_DiscountPercent: product.product_DiscountPercent ?? ''
+        product_DiscountPercent: product.product_DiscountPercent ?? '',
+        product_CompareAtPriceUSD: product.product_CompareAtPriceUSD ?? '',
+        product_CompareAtPriceLBP: product.product_CompareAtPriceLBP ?? ''
       });
       if (product.product_PriceUSD && product.product_PriceUSD > 0) setCurrency('USD');
       else if (product.product_PriceLBP && product.product_PriceLBP > 0) setCurrency('LBP');
@@ -106,7 +110,9 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
         product_IsFeatured: false,
         product_CategoryId: '',
         product_ShippingFee: '',
-        product_DiscountPercent: ''
+        product_DiscountPercent: '',
+        product_CompareAtPriceUSD: '',
+        product_CompareAtPriceLBP: ''
       });
       setCurrency('USD');
       setImageFile(null);
@@ -236,8 +242,12 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
       product_ShortDescription: formData.product_ShortDescription || null,
       product_PriceUSD: currency === 'USD' ? parseFloat(formData.product_PriceUSD) : null,
       product_PriceLBP: currency === 'LBP' ? parseFloat(formData.product_PriceLBP) : null,
-      product_CompareAtPriceUSD: null,
-      product_CompareAtPriceLBP: null,
+      product_CompareAtPriceUSD: currency === 'USD' && formData.product_CompareAtPriceUSD !== ''
+        ? parseFloat(formData.product_CompareAtPriceUSD)
+        : null,
+      product_CompareAtPriceLBP: currency === 'LBP' && formData.product_CompareAtPriceLBP !== ''
+        ? parseFloat(formData.product_CompareAtPriceLBP)
+        : null,
       product_Stock: formData.product_Stock ? parseInt(formData.product_Stock) : 0,
       product_SKU: formData.product_SKU || null,
       product_IsActive: formData.product_IsActive,
@@ -369,15 +379,43 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
           </div>
 
           {currency === 'USD' ? (
-            <div className="form-group">
-              <label>Price (USD) *</label>
-              <input type="number" name="product_PriceUSD" value={formData.product_PriceUSD} onChange={handleChange} step="0.01" required />
-            </div>
+            <>
+              <div className="form-group">
+                <label>Price (USD) *</label>
+                <input type="number" name="product_PriceUSD" value={formData.product_PriceUSD} onChange={handleChange} step="0.01" required />
+              </div>
+              <div className="form-group">
+                <label>Compare-at Price (USD)</label>
+                <input
+                  type="number"
+                  name="product_CompareAtPriceUSD"
+                  value={formData.product_CompareAtPriceUSD}
+                  onChange={handleChange}
+                  step="0.01"
+                  placeholder="Original price shown crossed out"
+                />
+                <small className="field-hint">Optional. Shown as the &quot;was&quot; price when higher than the selling price.</small>
+              </div>
+            </>
           ) : (
-            <div className="form-group">
-              <label>Price (LBP) *</label>
-              <input type="number" name="product_PriceLBP" value={formData.product_PriceLBP} onChange={handleChange} step="0.01" required />
-            </div>
+            <>
+              <div className="form-group">
+                <label>Price (LBP) *</label>
+                <input type="number" name="product_PriceLBP" value={formData.product_PriceLBP} onChange={handleChange} step="0.01" required />
+              </div>
+              <div className="form-group">
+                <label>Compare-at Price (LBP)</label>
+                <input
+                  type="number"
+                  name="product_CompareAtPriceLBP"
+                  value={formData.product_CompareAtPriceLBP}
+                  onChange={handleChange}
+                  step="0.01"
+                  placeholder="Original price shown crossed out"
+                />
+                <small className="field-hint">Optional. Shown as the &quot;was&quot; price when higher than the selling price.</small>
+              </div>
+            </>
           )}
 
           <div className="form-row">

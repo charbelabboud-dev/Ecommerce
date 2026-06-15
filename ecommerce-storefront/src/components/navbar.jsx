@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
-import { getStoreSettings } from '../services/api';
+import { getStoreSettings, getImageUrl } from '../services/api';
 import { CartIcon } from './Icons';
 
 function Navbar() {
@@ -10,20 +10,24 @@ function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [storeName, setStoreName] = useState('MyStore');
+  const [storeLogo, setStoreLogo] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   const panelRef = useRef(null);       // reference to the mobile panel
   const toggleRef = useRef(null);      // reference to the hamburger button
 
-  // Fetch store name
+  // Fetch store settings
   useEffect(() => {
-    const fetchStoreName = async () => {
+    const fetchStoreSettings = async () => {
       const settings = await getStoreSettings();
       if (settings?.storeName) {
         setStoreName(settings.storeName);
       }
+      if (settings?.storeLogo) {
+        setStoreLogo(getImageUrl(settings.storeLogo));
+      }
     };
-    fetchStoreName();
+    fetchStoreSettings();
   }, []);
 
   // Check login status
@@ -84,7 +88,11 @@ function Navbar() {
     <nav className="navbar">
       <div className="container">
                 <Link to="/" className="navbar-brand">
-          {storeName}
+          {storeLogo ? (
+            <img src={storeLogo} alt={storeName} className="navbar-logo" />
+          ) : (
+            storeName
+          )}
         </Link>
 
         <button 

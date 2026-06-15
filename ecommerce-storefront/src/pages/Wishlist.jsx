@@ -4,6 +4,12 @@ import { useCart } from '../contexts/CartContext';
 import { getWishlist, removeFromWishlist } from '../services/wishlistApi';
 import { getImageUrl as buildImageUrl } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
+import {
+  formatProductPrice,
+  formatStrikethroughPrice,
+  shouldShowStrikethrough,
+  hasDiscount
+} from '../utils/pricing';
 import './Wishlist.css';
 
 function Wishlist() {
@@ -42,16 +48,6 @@ function Wishlist() {
     }
     addToCartContext(product, 1);
     addToast(`${product.product_Name} added to cart!`, 'success');
-  };
-
-  const getPrice = (product) => {
-    if (product.product_PriceUSD) {
-      return `$${product.product_PriceUSD.toFixed(2)}`;
-    }
-    if (product.product_PriceLBP) {
-      return `${product.product_PriceLBP.toFixed(2)} LBP`;
-    }
-    return 'N/A';
   };
 
   const getProductImage = (product) => {
@@ -106,7 +102,6 @@ function Wishlist() {
                 </Link>
               </h3>
               
-              {/* Stock Status - Below Title */}
               <div className="wishlist-stock-status">
                 {item.product.product_Stock === 0 ? (
                   <span className="out-of-stock">Out of Stock</span>
@@ -117,7 +112,14 @@ function Wishlist() {
                 )}
               </div>
               
-              <p className="wishlist-price">{getPrice(item.product)}</p>
+              <div className="wishlist-price-row">
+                <p className={`wishlist-price ${hasDiscount(item.product) ? 'wishlist-price--sale' : ''}`}>
+                  {formatProductPrice(item.product)}
+                </p>
+                {shouldShowStrikethrough(item.product) && (
+                  <p className="wishlist-price-original">{formatStrikethroughPrice(item.product)}</p>
+                )}
+              </div>
               
               <div className="wishlist-actions">
                 <button 

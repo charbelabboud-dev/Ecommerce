@@ -21,6 +21,23 @@ function Checkout() {
     if (!token) {
       alert('Please login to proceed to checkout');
       navigate('/login');
+      return;
+    }
+
+    const customer = localStorage.getItem('customer');
+    if (customer) {
+      try {
+        const data = JSON.parse(customer);
+        setFormData((prev) => ({
+          ...prev,
+          customerName: data.customer_Name || '',
+          customerPhone: data.customer_Phone || '',
+          customerEmail: data.customer_Email || '',
+          customerAddress: data.customer_Address || '',
+        }));
+      } catch (error) {
+        console.error('Error parsing customer data:', error);
+      }
     }
   }, [navigate]);
   
@@ -190,9 +207,9 @@ function Checkout() {
                 <div key={item.product_Id} className="summary-item">
                   <span>{item.product_Name} x{item.quantity}</span>
                   <span>
-                    {item.product_PriceUSD 
-                      ? `$${(item.product_PriceUSD * item.quantity).toFixed(2)}`
-                      : `${(item.product_PriceLBP * item.quantity).toFixed(2)} LBP`}
+                    {item.product_PriceUSD
+                      ? `$${(getSalePriceUSD(item) * item.quantity).toFixed(2)}`
+                      : `${(getSalePriceLBP(item) * item.quantity).toFixed(2)} LBP`}
                   </span>
                 </div>
               ))}

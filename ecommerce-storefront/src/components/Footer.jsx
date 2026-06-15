@@ -77,7 +77,6 @@ function Footer() {
             <h4>Account</h4>
             <FooterLink to="/login">Sign In</FooterLink>
             <FooterLink to="/register">Create Account</FooterLink>
-            <FooterLink to="/orders">Order History</FooterLink>
           </div>
 
           <div className="footer-links">

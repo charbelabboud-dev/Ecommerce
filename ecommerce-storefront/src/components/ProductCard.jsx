@@ -9,7 +9,8 @@ import {
   getEffectiveDiscountPercent,
   hasDiscount,
   formatProductPrice,
-  formatOriginalProductPrice
+  formatStrikethroughPrice,
+  shouldShowStrikethrough
 } from '../utils/pricing';
 import './ProductCard.css';
 
@@ -131,10 +132,12 @@ function ProductCard({ product }) {
 
         <div className="product-card-pricing">
           <div className="product-card-price-row">
-            {onSale ? (
+            {shouldShowStrikethrough(product) || onSale ? (
               <>
                 <span className="product-price product-price-sale">{formatProductPrice(product)}</span>
-                <span className="product-price-original">{formatOriginalProductPrice(product)}</span>
+                {shouldShowStrikethrough(product) && (
+                  <span className="product-price-original">{formatStrikethroughPrice(product)}</span>
+                )}
               </>
             ) : (
               <span className="product-price">{formatProductPrice(product)}</span>

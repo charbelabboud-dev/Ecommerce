@@ -58,10 +58,46 @@ export function formatProductPrice(product, useSale = true) {
   return 'N/A';
 }
 
-export function formatOriginalProductPrice(product) {
-  if (product?.product_PriceUSD) return formatUSD(product.product_PriceUSD);
-  if (product?.product_PriceLBP) return formatLBP(product.product_PriceLBP);
+export function getStrikethroughPriceUSD(product) {
+  if (product?.product_CompareAtPriceUSD != null) return product.product_CompareAtPriceUSD;
+  if (hasDiscount(product) && product?.product_PriceUSD) return product.product_PriceUSD;
   return null;
+}
+
+export function getStrikethroughPriceLBP(product) {
+  if (product?.product_CompareAtPriceLBP != null) return product.product_CompareAtPriceLBP;
+  if (hasDiscount(product) && product?.product_PriceLBP) return product.product_PriceLBP;
+  return null;
+}
+
+export function shouldShowStrikethrough(product) {
+  if (product?.product_PriceUSD) {
+    const strike = getStrikethroughPriceUSD(product);
+    const current = getUnitPrice(product);
+    return strike != null && strike > current;
+  }
+  if (product?.product_PriceLBP) {
+    const strike = getStrikethroughPriceLBP(product);
+    const current = getUnitPrice(product);
+    return strike != null && strike > current;
+  }
+  return false;
+}
+
+export function formatStrikethroughPrice(product) {
+  if (product?.product_PriceUSD) {
+    const strike = getStrikethroughPriceUSD(product);
+    return strike != null ? formatUSD(strike) : null;
+  }
+  if (product?.product_PriceLBP) {
+    const strike = getStrikethroughPriceLBP(product);
+    return strike != null ? formatLBP(strike) : null;
+  }
+  return null;
+}
+
+export function formatOriginalProductPrice(product) {
+  return formatStrikethroughPrice(product);
 }
 
 export function formatWhatsAppNumber(phone) {
