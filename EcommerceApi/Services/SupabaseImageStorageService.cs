@@ -30,7 +30,7 @@ public class SupabaseImageStorageService : IImageStorageService
             HttpMethod.Post,
             $"storage/v1/object/{_settings.BucketName}/{objectKey}");
 
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.ServiceRoleKey);
+        ApplyAuthHeaders(request);
         request.Content = new StreamContent(stream);
         request.Content.Headers.ContentType = new MediaTypeHeaderValue(GetContentType(extension));
 
@@ -61,7 +61,7 @@ public class SupabaseImageStorageService : IImageStorageService
             HttpMethod.Delete,
             $"storage/v1/object/{_settings.BucketName}/{objectKey}");
 
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.ServiceRoleKey);
+        ApplyAuthHeaders(request);
 
         var response = await client.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
@@ -108,6 +108,20 @@ public class SupabaseImageStorageService : IImageStorageService
 
         return null;
     }
+
+    private void ApplyAuthHeaders(HttpRequestMessage request)
+    {
+        // New sb_secret_ keys must use apikey only — Bearer treats them as JWT and fails.
+        request.Headers.TryAddWithoutValidation("apikey", _settings.ServiceRoleKey);
+
+        if (IsLegacyJwtKey(_settings.ServiceRoleKey))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.ServiceRoleKey);
+        }
+    }
+
+    private static bool IsLegacyJwtKey(string key) =>
+        key.TrimStart().StartsWith("eyJ", StringComparison.Ordinal);
 
     private static string GetContentType(string extension) => extension switch
     {

@@ -94,9 +94,9 @@ Render **free tier** wipes local disk on sleep/redeploy, so uploaded images disa
 1. **Project Settings** (gear icon) → **API**
 2. Copy:
    - **Project URL** → e.g. `https://abcdefghijklmnop.supabase.co`
-   - **service_role** key (under **Project API keys**) — keep this **secret**, server-only
+   - **Secret key** (`sb_secret_...`) from **API Keys**, or **service_role** from **Legacy API Keys** tab — keep this **secret**, server-only
 
-> Never put the service role key in the storefront or admin React apps. Only set it on Render (API).
+> Use the **secret key** (`sb_secret_...`) on Render. Legacy **service_role** JWT also works. Do not use the publishable key.
 
 #### 4. Set Render environment variables
 
