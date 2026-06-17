@@ -165,7 +165,11 @@ app.UseHttpsRedirection();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+
+var healthResponse = () => Results.Ok(new { status = "ok" });
+app.MapGet("/health", healthResponse).DisableRateLimiting();
+app.MapMethods("/health", new[] { "HEAD" }, () => Results.Ok()).DisableRateLimiting();
+
 app.MapControllers();
 
 app.Run();
