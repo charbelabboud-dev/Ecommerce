@@ -72,9 +72,42 @@ Content-Type: application/json
 
 Works only when no admin exists yet.
 
-### Uploads note
+### Product images — Cloudflare R2 (required for production)
 
-Render **free tier** has ephemeral disk — product images are lost on redeploy. Fine for phase-1 testing; use persistent disk or object storage (R2/S3) later.
+Render **free tier** wipes local disk on sleep/redeploy, so uploaded images disappear. The API stores images in **Cloudflare R2** when configured (S3-compatible, free tier is generous).
+
+#### 1. Create R2 bucket
+
+1. Cloudflare dashboard → **R2 Object Storage** → **Create bucket**
+2. Name e.g. `ecommerce-product-images`
+3. **Settings** → **Public access** → enable **R2.dev subdomain** (or connect a custom domain later)
+4. Copy the public URL, e.g. `https://pub-xxxxxxxx.r2.dev`
+
+#### 2. Create R2 API token
+
+1. R2 → **Manage R2 API tokens** → **Create API token**
+2. Permissions: **Object Read & Write** on your bucket
+3. Save **Access Key ID**, **Secret Access Key**, and your **Account ID** (from Cloudflare dashboard URL or R2 overview)
+
+#### 3. Set Render environment variables
+
+In Render → API service → **Environment**, add:
+
+| Variable | Value |
+|----------|-------|
+| `R2Settings__AccountId` | Your Cloudflare account ID |
+| `R2Settings__AccessKeyId` | R2 access key ID |
+| `R2Settings__SecretAccessKey` | R2 secret access key |
+| `R2Settings__BucketName` | `ecommerce-product-images` |
+| `R2Settings__PublicUrl` | `https://pub-xxxxxxxx.r2.dev` (no trailing slash) |
+
+Redeploy the API after saving.
+
+#### 4. Re-upload existing product images
+
+Old images stored as `/uploads/products/...` on Render disk are gone. After R2 is live, **re-upload** product photos in admin — new URLs will be permanent `https://pub-xxx.r2.dev/products/...` links.
+
+If R2 env vars are **not** set, the API falls back to local disk (fine for local dev only).
 
 ---
 

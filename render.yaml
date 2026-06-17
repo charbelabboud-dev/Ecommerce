@@ -37,3 +37,13 @@ services:
         sync: false
       - key: CorsSettings__AllowedOrigins__1
         sync: false
+      - key: R2Settings__AccountId
+        sync: false
+      - key: R2Settings__AccessKeyId
+        sync: false
+      - key: R2Settings__SecretAccessKey
+        sync: false
+      - key: R2Settings__BucketName
+        sync: false
+      - key: R2Settings__PublicUrl
+        sync: false

@@ -41,6 +41,24 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<EmailService>();
 
+builder.Services.Configure<R2Settings>(builder.Configuration.GetSection("R2Settings"));
+builder.Services.AddSingleton<IImageStorageService>(sp =>
+{
+    var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<R2Settings>>().Value;
+    if (settings.IsConfigured)
+    {
+        return new R2ImageStorageService(
+            sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<R2Settings>>(),
+            sp.GetRequiredService<ILogger<R2ImageStorageService>>());
+    }
+
+    var logger = sp.GetRequiredService<ILogger<LocalImageStorageService>>();
+    logger.LogWarning("R2Settings is not configured. Product images will be stored on local disk (ephemeral on Render free tier).");
+    return new LocalImageStorageService(
+        sp.GetRequiredService<IWebHostEnvironment>(),
+        logger);
+});
+
 // ========== RATE LIMITING ==========
 builder.Services.AddRateLimiter(options =>
 {

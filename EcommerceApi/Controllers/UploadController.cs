@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using EcommerceApi.Data;
 using EcommerceApi.Models;
+using EcommerceApi.Services;
 
 namespace EcommerceApi.Controllers;
 
@@ -11,12 +12,12 @@ namespace EcommerceApi.Controllers;
 public class UploadController : ControllerBase
 {
     private readonly AppDbContext _context;
-    private readonly IWebHostEnvironment _environment;
+    private readonly IImageStorageService _imageStorage;
 
-    public UploadController(AppDbContext context, IWebHostEnvironment environment)
+    public UploadController(AppDbContext context, IImageStorageService imageStorage)
     {
         _context = context;
-        _environment = environment;
+        _imageStorage = imageStorage;
     }
 
     // POST: api/upload/product-image
@@ -26,73 +27,48 @@ public class UploadController : ControllerBase
     {
         try
         {
-            // Check if product exists
             var product = await _context.Products.FindAsync(request.ProductId);
             if (product == null)
             {
                 return NotFound($"Product with ID {request.ProductId} not found.");
             }
 
-            // Validate file
             if (request.Image == null || request.Image.Length == 0)
             {
                 return BadRequest("No image file provided.");
             }
 
-            // Check file type
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
             var fileExtension = Path.GetExtension(request.Image.FileName).ToLowerInvariant();
-            
+
             if (!allowedExtensions.Contains(fileExtension))
             {
                 return BadRequest($"Invalid file type. Allowed: {string.Join(", ", allowedExtensions)}");
             }
 
-            // Check file size (max 5MB)
             if (request.Image.Length > 5 * 1024 * 1024)
             {
                 return BadRequest("File size exceeds 5MB limit.");
             }
 
-            // Generate unique filename
-            var uniqueFileName = $"{request.ProductId}_{DateTime.UtcNow.Ticks}{fileExtension}";
-            
-            // Create directory if not exists
-            var uploadsFolder = Path.Combine(_environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads", "products");
-            if (!Directory.Exists(uploadsFolder))
-            {
-                Directory.CreateDirectory(uploadsFolder);
-            }
+            var imageUrl = await _imageStorage.UploadProductImageAsync(request.ProductId, request.Image);
 
-            // Save file to disk
-            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await request.Image.CopyToAsync(stream);
-            }
-
-            // Create image URL
-            var imageUrl = $"/uploads/products/{uniqueFileName}";
-
-            // If this image is set as main, remove IsMain from other images
             if (request.IsMain)
             {
                 var existingMainImages = await _context.ProductImages
                     .Where(pi => pi.ProductImage_ProductId == request.ProductId && pi.ProductImage_IsMain == true)
                     .ToListAsync();
-                
+
                 foreach (var existingMain in existingMainImages)
                 {
                     existingMain.ProductImage_IsMain = false;
                 }
             }
 
-            // Get next display order
             var maxOrder = await _context.ProductImages
                 .Where(pi => pi.ProductImage_ProductId == request.ProductId)
                 .MaxAsync(pi => (int?)pi.ProductImage_DisplayOrder) ?? 0;
 
-            // Create image record
             var productImage = new ProductImage
             {
                 ProductImage_ProductId = request.ProductId,
@@ -125,19 +101,13 @@ public class UploadController : ControllerBase
     public async Task<IActionResult> DeleteProductImage(int id)
     {
         var productImage = await _context.ProductImages.FindAsync(id);
-        
+
         if (productImage == null)
         {
             return NotFound($"Image with ID {id} not found.");
         }
 
-        var webRootPath = _environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-        var imagePath = Path.Combine(webRootPath, productImage.ProductImage_ImageUrl.TrimStart('/'));
-        
-        if (System.IO.File.Exists(imagePath))
-        {
-            System.IO.File.Delete(imagePath);
-        }
+        await _imageStorage.DeleteImageAsync(productImage.ProductImage_ImageUrl);
 
         _context.ProductImages.Remove(productImage);
         await _context.SaveChangesAsync();
@@ -196,7 +166,6 @@ public class UploadController : ControllerBase
     }
 }
 
-// Request DTO
 public class UploadImageRequest
 {
     public int ProductId { get; set; }
