@@ -26,11 +26,14 @@ import { ToastProvider } from './contexts/ToastContext.jsx';
 import WhatsAppButton from './components/WhatsAppButton';
 import ScrollToTop from './components/ScrollToTop';
 
+import ApiStatusGate from './components/ApiStatusGate';
+
 function App() {
   return (
     <Router>
       <ScrollToTop />
       <ToastProvider>
+        <ApiStatusGate>
         <CartProvider>
           <div className="app-layout">
             <Navbar />
@@ -61,6 +64,7 @@ function App() {
             <WhatsAppButton />
           </div>
         </CartProvider>
+        </ApiStatusGate>
       </ToastProvider>
     </Router>
   );

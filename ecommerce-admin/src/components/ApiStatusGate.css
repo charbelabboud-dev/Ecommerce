@@ -1,0 +1,63 @@
+.api-wake-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.72);
+  padding: 24px;
+}
+
+.api-wake-card {
+  max-width: 420px;
+  width: 100%;
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 28px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.api-wake-card h2 {
+  margin: 16px 0 8px;
+  color: #0f172a;
+  font-size: 1.35rem;
+}
+
+.api-wake-card p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.api-wake-spinner {
+  width: 42px;
+  height: 42px;
+  margin: 0 auto;
+  border: 3px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: api-wake-spin 0.9s linear infinite;
+}
+
+.api-wake-retry {
+  margin-top: 20px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.api-wake-retry:hover {
+  background: #1e293b;
+}
+
+@keyframes api-wake-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

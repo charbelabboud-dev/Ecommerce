@@ -12,6 +12,8 @@ import './App.css';
 import { ConfirmProvider } from './contexts/ConfirmContext';
 
 
+import ApiStatusGate from './components/ApiStatusGate';
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [admin, setAdmin] = useState(null);
@@ -50,6 +52,7 @@ function App() {
   return (
     <ToastProvider>
       <ConfirmProvider>
+      <ApiStatusGate>
       <Router>
         <Routes>
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
@@ -93,6 +96,7 @@ function App() {
 } />
         </Routes>
       </Router>
+      </ApiStatusGate>
       </ConfirmProvider>
     </ToastProvider>
   );

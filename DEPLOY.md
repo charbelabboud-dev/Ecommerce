@@ -180,6 +180,24 @@ After Cloudflare gives you URLs (e.g. `https://primeplus-storefront.pages.dev`):
 
 ---
 
+## 4b. Keep API awake (Render free tier — optional but recommended)
+
+Render **free** services sleep after ~15 minutes of no traffic. The storefront and admin now show a “Starting the server…” screen and retry automatically, but you can **prevent sleep** with a free uptime monitor:
+
+1. Sign up at [uptimerobot.com](https://uptimerobot.com) (free)
+2. **Add New Monitor**
+   - Monitor Type: **HTTP(s)**
+   - Friendly Name: `Ecommerce API health`
+   - URL: `https://YOUR-API.onrender.com/health`
+   - Monitoring Interval: **5 minutes** (free tier)
+3. Save
+
+Ping every 5–14 minutes keeps the API warm so customers rarely hit cold starts.
+
+**Production alternative:** upgrade Render API to **Starter** ($7/mo) for always-on — no sleep, no pinger needed.
+
+---
+
 ## 5. Smoke test checklist
 
 - [ ] Storefront loads products

@@ -16,7 +16,16 @@ const API = axios.create({
     headers:{
         "Content-Type":'application/json',
     },
+    timeout: 30000,
 });
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isRetryableError = (error) => {
+    if (!error.response) return true;
+    const status = error.response.status;
+    return status === 502 || status === 503 || status === 504;
+};
 
 //interCeptors runs before every request ! checks if a token exists in the browsers storage , if yes adds authorization : Bearer in front of it ! 
 API.interceptors.request.use(
@@ -32,7 +41,16 @@ API.interceptors.request.use(
 
 API.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
+        const config = error.config;
+        if (config && isRetryableError(error)) {
+            config.__retryCount = (config.__retryCount || 0) + 1;
+            if (config.__retryCount <= 2) {
+                await sleep(4000 * config.__retryCount);
+                return API(config);
+            }
+        }
+
         if (error.response?.status === 401) {
             const hadToken = localStorage.getItem('token');
             if (hadToken) {
