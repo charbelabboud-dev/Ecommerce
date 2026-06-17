@@ -72,42 +72,51 @@ Content-Type: application/json
 
 Works only when no admin exists yet.
 
-### Product images — Cloudflare R2 (required for production)
+### Product images — Supabase Storage (recommended, free)
 
-Render **free tier** wipes local disk on sleep/redeploy, so uploaded images disappear. The API stores images in **Cloudflare R2** when configured (S3-compatible, free tier is generous).
+Render **free tier** wipes local disk on sleep/redeploy, so uploaded images disappear. The API stores images in **Supabase Storage** when configured (free tier, no card required for most accounts).
 
-#### 1. Create R2 bucket
+#### 1. Create Supabase project
 
-1. Cloudflare dashboard → **R2 Object Storage** → **Create bucket**
-2. Name e.g. `ecommerce-product-images`
-3. **Settings** → **Public access** → enable **R2.dev subdomain** (or connect a custom domain later)
-4. Copy the public URL, e.g. `https://pub-xxxxxxxx.r2.dev`
+1. Go to [supabase.com](https://supabase.com) → **Start your project** (free)
+2. Create a new project (pick a name, password, region)
+3. Wait for the project to finish provisioning
 
-#### 2. Create R2 API token
+#### 2. Create a public storage bucket
 
-1. R2 → **Manage R2 API tokens** → **Create API token**
-2. Permissions: **Object Read & Write** on your bucket
-3. Save **Access Key ID**, **Secret Access Key**, and your **Account ID** (from Cloudflare dashboard URL or R2 overview)
+1. In Supabase dashboard → **Storage** → **New bucket**
+2. Name: `product-images`
+3. Enable **Public bucket** (so product photos load on your storefront without auth)
+4. Create bucket
 
-#### 3. Set Render environment variables
+#### 3. Get API credentials
+
+1. **Project Settings** (gear icon) → **API**
+2. Copy:
+   - **Project URL** → e.g. `https://abcdefghijklmnop.supabase.co`
+   - **service_role** key (under **Project API keys**) — keep this **secret**, server-only
+
+> Never put the service role key in the storefront or admin React apps. Only set it on Render (API).
+
+#### 4. Set Render environment variables
 
 In Render → API service → **Environment**, add:
 
 | Variable | Value |
 |----------|-------|
-| `R2Settings__AccountId` | Your Cloudflare account ID |
-| `R2Settings__AccessKeyId` | R2 access key ID |
-| `R2Settings__SecretAccessKey` | R2 secret access key |
-| `R2Settings__BucketName` | `ecommerce-product-images` |
-| `R2Settings__PublicUrl` | `https://pub-xxxxxxxx.r2.dev` (no trailing slash) |
+| `SupabaseStorage__SupabaseUrl` | `https://YOUR_PROJECT_REF.supabase.co` |
+| `SupabaseStorage__ServiceRoleKey` | Your `service_role` key |
+| `SupabaseStorage__BucketName` | `product-images` |
 
 Redeploy the API after saving.
 
-#### 4. Re-upload existing product images
+#### 5. Re-upload existing product images
 
-Old images stored as `/uploads/products/...` on Render disk are gone. After R2 is live, **re-upload** product photos in admin — new URLs will be permanent `https://pub-xxx.r2.dev/products/...` links.
+Old images stored as `/uploads/products/...` on Render disk are gone. After Supabase is live, **re-upload** product photos in admin. New URLs will look like:
 
-If R2 env vars are **not** set, the API falls back to local disk (fine for local dev only).
+`https://YOUR_PROJECT.supabase.co/storage/v1/object/public/product-images/products/...`
+
+If Supabase env vars are **not** set, the API falls back to local disk (local dev only) or Cloudflare R2 if that is configured instead.
 
 ---
 

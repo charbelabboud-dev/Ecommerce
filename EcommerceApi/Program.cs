@@ -41,11 +41,20 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<EmailService>();
 
+builder.Services.Configure<SupabaseStorageSettings>(builder.Configuration.GetSection("SupabaseStorage"));
 builder.Services.Configure<R2Settings>(builder.Configuration.GetSection("R2Settings"));
+builder.Services.AddHttpClient("SupabaseStorage");
+builder.Services.AddSingleton<SupabaseImageStorageService>();
 builder.Services.AddSingleton<IImageStorageService>(sp =>
 {
-    var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<R2Settings>>().Value;
-    if (settings.IsConfigured)
+    var supabaseSettings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<SupabaseStorageSettings>>().Value;
+    if (supabaseSettings.IsConfigured)
+    {
+        return sp.GetRequiredService<SupabaseImageStorageService>();
+    }
+
+    var r2Settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<R2Settings>>().Value;
+    if (r2Settings.IsConfigured)
     {
         return new R2ImageStorageService(
             sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<R2Settings>>(),
@@ -53,7 +62,8 @@ builder.Services.AddSingleton<IImageStorageService>(sp =>
     }
 
     var logger = sp.GetRequiredService<ILogger<LocalImageStorageService>>();
-    logger.LogWarning("R2Settings is not configured. Product images will be stored on local disk (ephemeral on Render free tier).");
+    logger.LogWarning(
+        "No cloud storage configured (SupabaseStorage or R2Settings). Product images will use local disk (ephemeral on Render free tier).");
     return new LocalImageStorageService(
         sp.GetRequiredService<IWebHostEnvironment>(),
         logger);

@@ -37,6 +37,12 @@ services:
         sync: false
       - key: CorsSettings__AllowedOrigins__1
         sync: false
+      - key: SupabaseStorage__SupabaseUrl
+        sync: false
+      - key: SupabaseStorage__ServiceRoleKey
+        sync: false
+      - key: SupabaseStorage__BucketName
+        value: product-images
       - key: R2Settings__AccountId
         sync: false
       - key: R2Settings__AccessKeyId
