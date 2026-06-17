@@ -27,10 +27,12 @@ import WhatsAppButton from './components/WhatsAppButton';
 import ScrollToTop from './components/ScrollToTop';
 
 import ApiStatusGate from './components/ApiStatusGate';
+import AppBranding from './components/AppBranding';
 
 function App() {
   return (
     <Router>
+      <AppBranding />
       <ScrollToTop />
       <ToastProvider>
         <ApiStatusGate>

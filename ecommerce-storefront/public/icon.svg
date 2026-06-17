@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Shop">
+  <rect width="512" height="512" rx="96" fill="#0c1f3d"/>
+  <path fill="#ffffff" d="M160 176c0-35.3 28.7-64 64-64h64c35.3 0 64 28.7 64 64v16h48c17.7 0 32 14.3 32 32 0 5.5-1.4 10.7-3.9 15.2L384 384H128L91.9 239.2C89.4 234.7 88 229.5 88 224c0-17.7 14.3-32 32-32h40v-16zm64-32a32 32 0 0 0-32 32v16h128v-16a32 32 0 0 0-32-32h-64z"/>
+  <circle cx="192" cy="408" r="28" fill="#ffffff"/>
+  <circle cx="320" cy="408" r="28" fill="#ffffff"/>
+</svg>
