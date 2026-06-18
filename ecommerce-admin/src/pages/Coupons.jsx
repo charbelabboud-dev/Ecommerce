@@ -83,7 +83,10 @@ function Coupons() {
         <button className="add-button" onClick={() => setShowModal(true)}>+ Add Coupon</button>
       </div>
 
-      {loading ? <p>Loading...</p> : (
+      {loading ? <p className="coupons-empty">Loading...</p> : coupons.length === 0 ? (
+        <p className="coupons-empty">No promo codes yet. Click &quot;+ Add Coupon&quot; to create one.</p>
+      ) : (
+        <div className="coupons-table-container">
         <table className="coupons-table">
           <thead>
             <tr>
@@ -98,28 +101,34 @@ function Coupons() {
           <tbody>
             {coupons.map(c => (
               <tr key={c.coupon_Id}>
-                <td><strong>{c.coupon_Code}</strong></td>
-                <td>
+                <td data-label="Code"><strong className="cell-value">{c.coupon_Code}</strong></td>
+                <td data-label="Discount">
+                  <span className="cell-value">
                   {c.coupon_DiscountPercent ? `${c.coupon_DiscountPercent}%` :
                     c.coupon_DiscountAmountUSD ? `$${c.coupon_DiscountAmountUSD}` :
                     c.coupon_DiscountAmountLBP ? `${c.coupon_DiscountAmountLBP} LBP` : '—'}
+                  </span>
                 </td>
-                <td>{c.coupon_UsedCount}{c.coupon_UsageLimit ? ` / ${c.coupon_UsageLimit}` : ''}</td>
-                <td>{c.coupon_ExpiresAt ? new Date(c.coupon_ExpiresAt).toLocaleDateString() : 'Never'}</td>
-                <td>{c.coupon_IsActive ? 'Active' : 'Inactive'}</td>
-                <td>
+                <td data-label="Used"><span className="cell-value">{c.coupon_UsedCount}{c.coupon_UsageLimit ? ` / ${c.coupon_UsageLimit}` : ''}</span></td>
+                <td data-label="Expires"><span className="cell-value">{c.coupon_ExpiresAt ? new Date(c.coupon_ExpiresAt).toLocaleDateString() : 'Never'}</span></td>
+                <td data-label="Status"><span className="cell-value">{c.coupon_IsActive ? 'Active' : 'Inactive'}</span></td>
+                <td data-label="Actions">
                   <button className="delete-btn" onClick={() => handleDelete(c.coupon_Id, c.coupon_Code)}>Delete</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>New Coupon</h2>
+            <div className="modal-header">
+              <h2>New Coupon</h2>
+              <button type="button" className="close-btn" onClick={() => setShowModal(false)} aria-label="Close">×</button>
+            </div>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Code *</label>
