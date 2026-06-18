@@ -8,6 +8,7 @@ import Orders from './pages/Orders';
 import Categories from './pages/Categories';
 import Settings from './pages/Settings';
 import AdminReviews from './pages/AdminReviews';
+import Coupons from './pages/Coupons';
 import './App.css';
 import { ConfirmProvider } from './contexts/ConfirmContext';
 
@@ -92,6 +93,11 @@ function App() {
 <Route path="/settings" element={
   <ProtectedRoute>
     <Settings />
+  </ProtectedRoute>
+} />
+<Route path="/coupons" element={
+  <ProtectedRoute>
+    <Coupons />
   </ProtectedRoute>
 } />
         </Routes>

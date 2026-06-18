@@ -19,13 +19,25 @@ function Categories() {
     category_Description: '',
     category_DisplayOrder: 0,
     category_IsActive: true,
-    category_DiscountPercent: ''
+    category_DiscountPercent: '',
+    category_ParentId: ''
   });
+  const [parentCategories, setParentCategories] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchCategories();
+    fetchParents();
   }, []);
+
+  const fetchParents = async () => {
+    try {
+      const response = await API.get('/categories/all');
+      setParentCategories(response.data.filter(c => !c.category_ParentId));
+    } catch (error) {
+      console.error('Error fetching parent categories:', error);
+    }
+  };
 
   const fetchCategories = async () => {
     try {
@@ -48,7 +60,8 @@ function Categories() {
         category_Description: category.category_Description || '',
         category_DisplayOrder: category.category_DisplayOrder,
         category_IsActive: category.category_IsActive,
-        category_DiscountPercent: category.category_DiscountPercent ?? ''
+        category_DiscountPercent: category.category_DiscountPercent ?? '',
+        category_ParentId: category.category_ParentId || ''
       });
     } else {
       setEditingCategory(null);
@@ -57,7 +70,8 @@ function Categories() {
         category_Description: '',
         category_DisplayOrder: 0,
         category_IsActive: true,
-        category_DiscountPercent: ''
+        category_DiscountPercent: '',
+        category_ParentId: ''
       });
     }
     setShowModal(true);
@@ -83,6 +97,7 @@ function Categories() {
     try {
       const payload = {
         ...formData,
+        category_ParentId: formData.category_ParentId ? parseInt(formData.category_ParentId, 10) : null,
         category_DiscountPercent: formData.category_DiscountPercent !== ''
           ? Math.min(100, Math.max(0, parseFloat(formData.category_DiscountPercent)))
           : null
@@ -148,6 +163,7 @@ const handleDelete = async (id, name) => {
             <thead>
               <tr>
                 <th>Name</th>
+                <th>Parent</th>
                 <th>Slug</th>
                 <th>Description</th>
                 <th>Display Order</th>
@@ -158,11 +174,12 @@ const handleDelete = async (id, name) => {
             </thead>
             <tbody>
   {categories.length === 0 ? (
-    <tr><td colSpan="7" className="no-data">No categories found.</td></tr>
+    <tr><td colSpan="8" className="no-data">No categories found.</td></tr>
   ) : (
     categories.map((category) => (
       <tr key={category.category_Id}>
         <td data-label="Name"><span className="cell-value">{category.category_Name}</span></td>
+        <td data-label="Parent"><span className="cell-value">{category.parent?.category_Name || '—'}</span></td>
         <td data-label="Slug"><span className="cell-value">{category.category_Slug}</span></td>
         <td data-label="Description"><span className="cell-value">{category.category_Description || '-'}</span></td>
         <td data-label="Display Order"><span className="cell-value">{category.category_DisplayOrder}</span></td>
@@ -207,6 +224,17 @@ const handleDelete = async (id, name) => {
                   required
                   placeholder="e.g., Electronics, Clothing, Food"
                 />
+              </div>
+              <div className="form-group">
+                <label>Parent Category (optional — for subcategories)</label>
+                <select name="category_ParentId" value={formData.category_ParentId} onChange={handleChange}>
+                  <option value="">None (top-level)</option>
+                  {parentCategories
+                    .filter(p => !editingCategory || p.category_Id !== editingCategory.category_Id)
+                    .map(p => (
+                      <option key={p.category_Id} value={p.category_Id}>{p.category_Name}</option>
+                    ))}
+                </select>
               </div>
               <div className="form-group">
                 <label>Description</label>

@@ -8,6 +8,10 @@ function Checkout() {
   const navigate = useNavigate();
   const { cartItems, getCartTotal, getCartCount, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState('');
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
@@ -60,7 +64,7 @@ function Checkout() {
 
   const subtotal = getSubtotal();
   const shippingTotal = calculateTotalShipping();
-  const grandTotal = subtotal + shippingTotal;
+  const grandTotal = Math.max(0, subtotal + shippingTotal - couponDiscount);
   const currency = getCurrency();
 
   const getFormattedPrice = (price) => {
@@ -74,6 +78,26 @@ function Checkout() {
     });
   };
 
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    try {
+      const response = await API.post('/coupons/validate', {
+        code: couponCode.trim(),
+        currency,
+        subtotal
+      });
+      setCouponDiscount(response.data.discountAmount);
+      setAppliedCoupon(response.data.code);
+    } catch (error) {
+      alert(error.response?.data?.message || 'Invalid coupon');
+      setCouponDiscount(0);
+      setAppliedCoupon('');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -84,8 +108,12 @@ function Checkout() {
       return {
         orderItem_ProductId: item.product_Id,
         orderItem_ProductName: item.product_Name,
-        orderItem_ProductSKU: item.product_SKU,
+        orderItem_ProductSKU: item.variant?.productVariant_SKU || item.product_SKU,
         orderItem_Quantity: item.quantity,
+        orderItem_VariantId: item.variantId || null,
+        orderItem_VariantDetails: item.variant
+          ? [item.variant.productVariant_Size, item.variant.productVariant_Color].filter(Boolean).join(' / ')
+          : null,
         orderItem_UnitPriceUSD: unitUsd,
         orderItem_UnitPriceLBP: unitLbp,
         orderItem_TotalPriceUSD: unitUsd ? unitUsd * item.quantity : null,
@@ -105,6 +133,7 @@ function Checkout() {
       order_ShippingFeeLBP: currency === 'LBP' ? shippingTotal : null,
       order_TotalAmountUSD: currency === 'USD' ? grandTotal : null,
       order_TotalAmountLBP: currency === 'LBP' ? grandTotal : null,
+      order_CouponCode: appliedCoupon || null,
       order_Notes: formData.notes || null,
       order_Status: 'Pending',
       order_PaymentMethod: 'COD',
@@ -204,7 +233,7 @@ function Checkout() {
             <h3>Order Summary</h3>
             <div className="summary-items">
               {cartItems.map(item => (
-                <div key={item.product_Id} className="summary-item">
+                <div key={item.cartKey || item.product_Id} className="summary-item">
                   <span>{item.product_Name} x{item.quantity}</span>
                   <span>
                     {item.product_PriceUSD
@@ -226,6 +255,25 @@ function Checkout() {
                     ? 'Free' 
                     : getFormattedPrice(shippingTotal)}
                 </span>
+              </div>
+              {appliedCoupon && couponDiscount > 0 && (
+                <div className="summary-row">
+                  <span>Coupon ({appliedCoupon}):</span>
+                  <span>−{getFormattedPrice(couponDiscount)}</span>
+                </div>
+              )}
+              <div className="coupon-section">
+                <div className="coupon-input-row">
+                  <input
+                    type="text"
+                    placeholder="Coupon code"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  />
+                  <button type="button" onClick={handleApplyCoupon} disabled={couponLoading}>
+                    {couponLoading ? '...' : 'Apply'}
+                  </button>
+                </div>
               </div>
               <div className="summary-row total">
                 <span>Total:</span>

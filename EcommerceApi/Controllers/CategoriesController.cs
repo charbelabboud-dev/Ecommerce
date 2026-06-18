@@ -17,17 +17,51 @@
             _context = context;
         }
 
-        // GET: api/categories (Public)
+        // GET: api/categories (Public - top-level with subcategories)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
+        public async Task<ActionResult<IEnumerable<object>>> GetCategories()
         {
             var categories = await _context.Categories
-                .Where(c => c.Category_IsActive == true)
+                .Where(c => c.Category_IsActive == true && c.Category_ParentId == null)
+                .Include(c => c.Subcategories.Where(s => s.Category_IsActive))
                 .OrderBy(c => c.Category_DisplayOrder)
                 .ThenBy(c => c.Category_Name)
                 .ToListAsync();
 
-            return Ok(categories);
+            return Ok(categories.Select(c => new
+            {
+                c.Category_Id,
+                c.Category_Name,
+                c.Category_Slug,
+                c.Category_Description,
+                c.Category_ImageUrl,
+                c.Category_DisplayOrder,
+                c.Category_IsActive,
+                c.Category_DiscountPercent,
+                c.Category_ParentId,
+                Subcategories = c.Subcategories.OrderBy(s => s.Category_DisplayOrder).Select(s => new
+                {
+                    s.Category_Id,
+                    s.Category_Name,
+                    s.Category_Slug,
+                    s.Category_Description,
+                    s.Category_DisplayOrder,
+                    s.Category_DiscountPercent,
+                    s.Category_ParentId
+                })
+            }));
+        }
+
+        // GET: api/categories/tree (Admin - full hierarchy)
+        [Authorize(Roles = "Admin")]
+        [HttpGet("tree")]
+        public async Task<ActionResult<IEnumerable<Category>>> GetCategoryTree()
+        {
+            return Ok(await _context.Categories
+                .Include(c => c.Subcategories)
+                .Where(c => c.Category_ParentId == null)
+                .OrderBy(c => c.Category_DisplayOrder)
+                .ToListAsync());
         }
 
         // GET: api/categories/all (Admin only - includes inactive)
@@ -36,6 +70,7 @@
         public async Task<ActionResult<IEnumerable<Category>>> GetAllCategories()
         {
             var categories = await _context.Categories
+                .Include(c => c.Parent)
                 .OrderBy(c => c.Category_DisplayOrder)
                 .ThenBy(c => c.Category_Name)
                 .ToListAsync();
@@ -79,6 +114,7 @@
             var products = await _context.Products
                 .Where(p => p.Product_CategoryId == id && p.Product_IsActive == true)
                 .Include(p => p.ProductImages)
+                .Include(p => p.ProductVariants.Where(v => v.ProductVariant_IsActive))
                 .OrderBy(p => p.Product_Name)
                 .ToListAsync();
 
@@ -93,6 +129,7 @@
             // Generate slug from name
             category.Category_Slug = GenerateSlug(category.Category_Name);
             category.Category_DiscountPercent = NormalizeDiscount(category.Category_DiscountPercent);
+            category.Category_ParentId = category.Category_ParentId;
             category.Category_CreatedAt = DateTime.UtcNow;
             category.Category_UpdatedAt = DateTime.UtcNow;
 
@@ -126,6 +163,7 @@
             existingCategory.Category_DisplayOrder = updatedCategory.Category_DisplayOrder;
             existingCategory.Category_IsActive = updatedCategory.Category_IsActive;
             existingCategory.Category_DiscountPercent = NormalizeDiscount(updatedCategory.Category_DiscountPercent);
+            existingCategory.Category_ParentId = updatedCategory.Category_ParentId;
             existingCategory.Category_UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -145,11 +183,16 @@
                 return NotFound($"Category with ID {id} not found.");
             }
 
-            // Check if category has products
+            // Check if category has products or subcategories
             var hasProducts = await _context.Products.AnyAsync(p => p.Product_CategoryId == id);
+            var hasSubcategories = await _context.Categories.AnyAsync(c => c.Category_ParentId == id);
             if (hasProducts)
             {
                 return BadRequest("Cannot delete category that has products. Remove products first or reassign them.");
+            }
+            if (hasSubcategories)
+            {
+                return BadRequest("Cannot delete category that has subcategories. Remove subcategories first.");
             }
 
             _context.Categories.Remove(category);

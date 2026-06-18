@@ -27,7 +27,10 @@ public class Order
     public DateTime Order_CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime Order_UpdatedAt { get; set; } = DateTime.UtcNow;
     public int? Order_CustomerId { get; set; }
-public virtual Customer? Customer { get; set; }
+    public string? Order_CouponCode { get; set; }
+    public decimal? Order_CouponDiscountUSD { get; set; }
+    public decimal? Order_CouponDiscountLBP { get; set; }
+    public virtual Customer? Customer { get; set; }
 
     public virtual AdminUser? AdminUser { get; set; }
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();

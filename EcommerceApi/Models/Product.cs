@@ -24,6 +24,7 @@ public class Product
     public int? Product_CategoryId { get; set; }
     public decimal? Product_ShippingFee { get; set; }
     public decimal? Product_DiscountPercent { get; set; }
+    public int Product_LowStockThreshold { get; set; } = 5;
 
     [NotMapped]
     public decimal? Product_EffectiveDiscountPercent { get; set; }
@@ -40,4 +41,5 @@ public class Product
     public virtual ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
+    public virtual ICollection<ProductVariant> ProductVariants { get; set; } = new List<ProductVariant>();
 }

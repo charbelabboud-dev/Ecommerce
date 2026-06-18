@@ -1,0 +1,5 @@
+.coupons-container { padding: 1.5rem; max-width: 1100px; margin: 0 auto; }
+.coupons-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.coupons-header h1 { flex: 1; margin: 0; }
+.coupons-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }
+.coupons-table th, .coupons-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; }

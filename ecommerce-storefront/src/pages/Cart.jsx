@@ -99,7 +99,7 @@ const handleCheckout = () => {
             <span></span>
           </div>
           {cartItems.map(item => (
-            <div key={item.product_Id} className="cart-item">
+            <div key={item.cartKey} className="cart-item">
               <div className="cart-item-product">
                 <img 
                   src={item.productImages?.[0]?.productImage_ImageUrl 
@@ -112,6 +112,11 @@ const handleCheckout = () => {
                 <div className="cart-item-info">
                   <Link to={`/product/${item.product_Id}`} className="cart-item-name">
                     {item.product_Name}
+                    {item.variant && (
+                      <span className="cart-variant-label">
+                        {' '}({[item.variant.productVariant_Size, item.variant.productVariant_Color].filter(Boolean).join(' / ')})
+                      </span>
+                    )}
                   </Link>
                 </div>
               </div>
@@ -120,7 +125,7 @@ const handleCheckout = () => {
               <div className="cart-item-quantity">
                 <button 
                   className="qty-btn-decrease"
-                  onClick={() => updateQuantity(item.product_Id, item.quantity - 1)}
+                  onClick={() => updateQuantity(item.cartKey, item.quantity - 1)}
                   disabled={item.quantity <= 1}
                 >
                   −
@@ -128,14 +133,14 @@ const handleCheckout = () => {
                 <span className="quantity-display">{item.quantity}</span>
                 <button 
                   className="qty-btn-increase"
-                  onClick={() => updateQuantity(item.product_Id, item.quantity + 1)}
+                  onClick={() => updateQuantity(item.cartKey, item.quantity + 1)}
                 >
                   +
                 </button>
               </div>
               <div className="cart-item-total">{formatTotal(getItemTotal(item))}</div>
               <div className="cart-item-remove">
-                <button onClick={() => removeFromCart(item.product_Id)} className="remove-btn">
+                <button onClick={() => removeFromCart(item.cartKey)} className="remove-btn">
                   🗑️ Remove
                 </button>
               </div>

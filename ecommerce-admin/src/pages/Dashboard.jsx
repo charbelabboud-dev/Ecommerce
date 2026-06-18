@@ -4,6 +4,7 @@ import API from '../services/api';
 import { useToast } from '../contexts/ToastContexts';
 import './Dashboard.css';
 import LowStockAlert from '../components/LowStockAlert';
+import SalesChart from '../components/SalesChart';
 
 function Dashboard({ admin, onLogout }) {
   const navigate = useNavigate();
@@ -48,7 +49,10 @@ function Dashboard({ admin, onLogout }) {
       );
 
       const products = productsRes.data;
-      const lowStockCount = products.filter((p) => p.product_Stock > 0 && p.product_Stock <= 5).length;
+      const lowStockCount = products.filter((p) => {
+        const threshold = p.product_LowStockThreshold > 0 ? p.product_LowStockThreshold : 5;
+        return p.product_Stock > 0 && p.product_Stock <= threshold;
+      }).length;
       const outOfStockCount = products.filter((p) => p.product_Stock === 0).length;
 
       setStats({
@@ -127,6 +131,8 @@ function Dashboard({ admin, onLogout }) {
         </div>
       </div>
 
+      <SalesChart />
+
       <div className="dashboard-alerts">
         <LowStockAlert />
 
@@ -174,6 +180,11 @@ function Dashboard({ admin, onLogout }) {
           onClick={() => navigate('/categories')}
           icon="🏷️"
           label="Manage Categories"
+        />
+        <NavButton
+          onClick={() => navigate('/coupons')}
+          icon="🎟️"
+          label="Promo Codes"
         />
         <NavButton
           onClick={() => navigate('/reviews')}

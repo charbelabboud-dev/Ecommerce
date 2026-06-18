@@ -27,6 +27,7 @@ public class ProductsController : ControllerBase
         var products = await _context.Products
             .Include(p => p.ProductImages)
             .Include(p => p.Category)
+            .Include(p => p.ProductVariants.Where(v => v.ProductVariant_IsActive))
             .OrderBy(p => p.Product_Name)
             .ToListAsync();
 
@@ -41,6 +42,7 @@ public class ProductsController : ControllerBase
         var product = await _context.Products
             .Include(p => p.ProductImages)
             .Include(p => p.Category)
+            .Include(p => p.ProductVariants.Where(v => v.ProductVariant_IsActive))
             .FirstOrDefaultAsync(p => p.Product_Id == id);
 
         if (product == null)
@@ -81,7 +83,7 @@ public async Task<ActionResult<Product>> CreateProduct(Product product)
 public async Task<ActionResult<IEnumerable<Product>>> GetLowStockProducts()
 {
     var lowStockProducts = await _context.Products
-        .Where(p => p.Product_Stock <= 5 && p.Product_Stock > 0)
+        .Where(p => p.Product_Stock > 0 && p.Product_Stock <= p.Product_LowStockThreshold)
         .Include(p => p.Category)
         .OrderBy(p => p.Product_Stock)
         .ToListAsync();
@@ -139,6 +141,9 @@ public async Task<IActionResult> UpdateStock(int id, [FromBody] int newStock)
         existingProduct.Product_CategoryId = updatedProduct.Product_CategoryId;
         existingProduct.Product_ShippingFee = updatedProduct.Product_ShippingFee;
         existingProduct.Product_DiscountPercent = NormalizeDiscount(updatedProduct.Product_DiscountPercent);
+        existingProduct.Product_LowStockThreshold = updatedProduct.Product_LowStockThreshold > 0
+            ? updatedProduct.Product_LowStockThreshold
+            : 5;
 
         await _context.SaveChangesAsync();
 
@@ -187,4 +192,118 @@ public async Task<IActionResult> DeleteProduct(int id)
 
         return Math.Min(100, Math.Max(0, discount.Value));
     }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPost("bulk-action")]
+    public async Task<IActionResult> BulkAction([FromBody] DTOs.BulkProductActionDto dto)
+    {
+        if (dto.ProductIds == null || dto.ProductIds.Count == 0)
+            return BadRequest(new { message = "No products selected." });
+
+        var products = await _context.Products
+            .Where(p => dto.ProductIds.Contains(p.Product_Id))
+            .ToListAsync();
+
+        if (products.Count == 0)
+            return NotFound(new { message = "No matching products found." });
+
+        foreach (var product in products)
+        {
+            switch (dto.Action?.ToLowerInvariant())
+            {
+                case "activate":
+                    product.Product_IsActive = true;
+                    break;
+                case "deactivate":
+                    product.Product_IsActive = false;
+                    break;
+                case "setdiscount":
+                    product.Product_DiscountPercent = NormalizeDiscount(dto.DiscountPercent);
+                    break;
+                default:
+                    return BadRequest(new { message = "Invalid action. Use: activate, deactivate, setDiscount." });
+            }
+            product.Product_UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+        return Ok(new { message = $"{products.Count} product(s) updated.", count = products.Count });
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("export/csv")]
+    public async Task<IActionResult> ExportCsv()
+    {
+        var products = await _context.Products
+            .Include(p => p.Category)
+            .OrderBy(p => p.Product_Name)
+            .ToListAsync();
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Id,Name,SKU,Category,PriceUSD,PriceLBP,Stock,LowStockThreshold,DiscountPercent,Active,Featured");
+
+        foreach (var p in products)
+        {
+            var category = p.Category?.Category_Name ?? "";
+            sb.AppendLine($"{p.Product_Id},\"{EscapeCsv(p.Product_Name)}\",\"{EscapeCsv(p.Product_SKU)}\",\"{EscapeCsv(category)}\",{p.Product_PriceUSD},{p.Product_PriceLBP},{p.Product_Stock},{p.Product_LowStockThreshold},{p.Product_DiscountPercent},{p.Product_IsActive},{p.Product_IsFeatured}");
+        }
+
+        return File(System.Text.Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", $"products-{DateTime.UtcNow:yyyyMMdd}.csv");
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("{productId}/variants")]
+    public async Task<ActionResult<IEnumerable<ProductVariant>>> GetVariants(int productId)
+    {
+        return Ok(await _context.ProductVariants
+            .Where(v => v.ProductVariant_ProductId == productId)
+            .ToListAsync());
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPost("{productId}/variants")]
+    public async Task<ActionResult<ProductVariant>> CreateVariant(int productId, ProductVariant variant)
+    {
+        if (!await _context.Products.AnyAsync(p => p.Product_Id == productId))
+            return NotFound();
+
+        variant.ProductVariant_ProductId = productId;
+        _context.ProductVariants.Add(variant);
+        await _context.SaveChangesAsync();
+        return Ok(variant);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("variants/{variantId}")]
+    public async Task<IActionResult> UpdateVariant(int variantId, ProductVariant updated)
+    {
+        var variant = await _context.ProductVariants.FindAsync(variantId);
+        if (variant == null) return NotFound();
+
+        variant.ProductVariant_Size = updated.ProductVariant_Size;
+        variant.ProductVariant_Color = updated.ProductVariant_Color;
+        variant.ProductVariant_Stock = updated.ProductVariant_Stock;
+        variant.ProductVariant_SKU = updated.ProductVariant_SKU;
+        variant.ProductVariant_PriceAdjustmentUSD = updated.ProductVariant_PriceAdjustmentUSD;
+        variant.ProductVariant_PriceAdjustmentLBP = updated.ProductVariant_PriceAdjustmentLBP;
+        variant.ProductVariant_IsActive = updated.ProductVariant_IsActive;
+
+        await _context.SaveChangesAsync();
+        return Ok(variant);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpDelete("variants/{variantId}")]
+    public async Task<IActionResult> DeleteVariant(int variantId)
+    {
+        var variant = await _context.ProductVariants.FindAsync(variantId);
+        if (variant == null) return NotFound();
+
+        _context.ProductVariants.Remove(variant);
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Variant deleted" });
+    }
+
+    private static string EscapeCsv(string? value) =>
+        (value ?? "").Replace("\"", "\"\"");
 }

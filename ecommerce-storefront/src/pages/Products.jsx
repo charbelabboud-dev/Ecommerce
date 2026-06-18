@@ -4,6 +4,7 @@ import API from '../services/api';
 import ProductCard from '../components/ProductCard';
 import PageMeta from '../components/PageMeta';
 import { SearchIcon, GridIcon } from '../components/Icons';
+import { getUnitPrice } from '../utils/pricing';
 import './Products.css';
 
 function ProductSkeleton() {
@@ -27,6 +28,8 @@ function Products() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
 
   useEffect(() => {
     fetchProducts();
@@ -62,10 +65,22 @@ function Products() {
   };
 
   const filteredProducts = useMemo(() => {
+    const min = priceMin !== '' ? parseFloat(priceMin) : null;
+    const max = priceMax !== '' ? parseFloat(priceMax) : null;
+
     let result = products.filter(product => {
       const matchesSearch = product.product_Name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || product.product_CategoryId === parseInt(selectedCategory);
-      return matchesSearch && matchesCategory;
+      const catId = parseInt(selectedCategory);
+      const matchesCategory = selectedCategory === 'all'
+        || product.product_CategoryId === catId
+        || categories.some(c =>
+          c.category_Id === catId &&
+          (c.subcategories || []).some(s => s.category_Id === product.product_CategoryId)
+        );
+      const price = getUnitPrice(product);
+      const matchesMin = min == null || price >= min;
+      const matchesMax = max == null || price <= max;
+      return matchesSearch && matchesCategory && matchesMin && matchesMax;
     });
 
     switch (sortBy) {
@@ -83,11 +98,17 @@ function Products() {
     }
 
     return result;
-  }, [products, searchTerm, selectedCategory, sortBy]);
+  }, [products, searchTerm, selectedCategory, sortBy, priceMin, priceMax, categories]);
 
   const getProductCount = (categoryId) => {
     if (categoryId === 'all') return products.length;
-    return products.filter(p => p.product_CategoryId === parseInt(categoryId)).length;
+    const id = parseInt(categoryId);
+    const parent = categories.find(c => c.category_Id === id);
+    if (parent?.subcategories?.length) {
+      const subIds = parent.subcategories.map(s => s.category_Id);
+      return products.filter(p => subIds.includes(p.product_CategoryId) || p.product_CategoryId === id).length;
+    }
+    return products.filter(p => p.product_CategoryId === id).length;
   };
 
   const activeCategoryName = selectedCategory === 'all'
@@ -143,19 +164,56 @@ function Products() {
                   <span className="count">{getProductCount('all')}</span>
                 </button>
                 {categories.map(category => (
-                  <button
-                    type="button"
-                    key={category.category_Id}
-                    className={`catalog-category-item ${selectedCategory === category.category_Id.toString() ? 'active' : ''}`}
-                    onClick={() => {
-                      setSelectedCategory(category.category_Id.toString());
-                      closeFilters();
-                    }}
-                  >
-                    <span>{category.category_Name}</span>
-                    <span className="count">{getProductCount(category.category_Id.toString())}</span>
-                  </button>
+                  <div key={category.category_Id} className="catalog-category-group">
+                    <button
+                      type="button"
+                      className={`catalog-category-item ${selectedCategory === category.category_Id.toString() ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedCategory(category.category_Id.toString());
+                        closeFilters();
+                      }}
+                    >
+                      <span>{category.category_Name}</span>
+                      <span className="count">{getProductCount(category.category_Id.toString())}</span>
+                    </button>
+                    {(category.subcategories || []).map(sub => (
+                      <button
+                        type="button"
+                        key={sub.category_Id}
+                        className={`catalog-category-item subcategory ${selectedCategory === sub.category_Id.toString() ? 'active' : ''}`}
+                        onClick={() => {
+                          setSelectedCategory(sub.category_Id.toString());
+                          closeFilters();
+                        }}
+                      >
+                        <span>{sub.category_Name}</span>
+                        <span className="count">{getProductCount(sub.category_Id.toString())}</span>
+                      </button>
+                    ))}
+                  </div>
                 ))}
+              </div>
+            </div>
+            <div className="catalog-filter-section">
+              <h3>Price Range</h3>
+              <div className="price-range-inputs">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={priceMin}
+                  onChange={(e) => setPriceMin(e.target.value)}
+                  min="0"
+                  className="price-range-input"
+                />
+                <span>–</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={priceMax}
+                  onChange={(e) => setPriceMax(e.target.value)}
+                  min="0"
+                  className="price-range-input"
+                />
               </div>
             </div>
           </aside>

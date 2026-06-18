@@ -21,6 +21,9 @@
     public DbSet<Wishlist> Wishlists { get; set; }
     public DbSet<Customer> Customers { get; set; }
     public DbSet<EmailVerificationOtp> EmailVerificationOtps { get; set; }
+    public DbSet<ProductVariant> ProductVariants { get; set; }
+    public DbSet<CartItem> CartItems { get; set; }
+    public DbSet<Coupon> Coupons { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -166,6 +169,11 @@ modelBuilder.Entity<Wishlist>(entity =>
                 
                 entity.Property(e => e.Category_ImageUrl)
                     .HasMaxLength(500);
+
+                entity.HasOne(e => e.Parent)
+                    .WithMany(c => c.Subcategories)
+                    .HasForeignKey(e => e.Category_ParentId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             // ========== Product Configuration ==========
@@ -280,6 +288,55 @@ entity.HasOne(e => e.Customer)
                 entity.HasOne(e => e.Product)
                     .WithMany(p => p.OrderItems)
                     .HasForeignKey(e => e.OrderItem_ProductId);
+            });
+
+            // ========== ProductVariant Configuration ==========
+            modelBuilder.Entity<ProductVariant>(entity =>
+            {
+                entity.HasKey(e => e.ProductVariant_Id);
+
+                entity.Property(e => e.ProductVariant_Size).HasMaxLength(50);
+                entity.Property(e => e.ProductVariant_Color).HasMaxLength(50);
+                entity.Property(e => e.ProductVariant_SKU).HasMaxLength(100);
+
+                entity.HasOne(e => e.Product)
+                    .WithMany(p => p.ProductVariants)
+                    .HasForeignKey(e => e.ProductVariant_ProductId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ========== CartItem Configuration ==========
+            modelBuilder.Entity<CartItem>(entity =>
+            {
+                entity.HasKey(e => e.CartItem_Id);
+
+                entity.HasOne(e => e.Customer)
+                    .WithMany()
+                    .HasForeignKey(e => e.CartItem_CustomerId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Product)
+                    .WithMany()
+                    .HasForeignKey(e => e.CartItem_ProductId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Variant)
+                    .WithMany()
+                    .HasForeignKey(e => e.CartItem_VariantId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // ========== Coupon Configuration ==========
+            modelBuilder.Entity<Coupon>(entity =>
+            {
+                entity.HasKey(e => e.Coupon_Id);
+
+                entity.Property(e => e.Coupon_Code)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.HasIndex(e => e.Coupon_Code)
+                    .IsUnique();
             });
         }
     }

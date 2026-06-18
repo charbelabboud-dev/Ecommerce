@@ -20,8 +20,11 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
     product_ShippingFee: '',
     product_DiscountPercent: '',
     product_CompareAtPriceUSD: '',
-    product_CompareAtPriceLBP: ''
+    product_CompareAtPriceLBP: '',
+    product_LowStockThreshold: '5'
   });
+  const [variants, setVariants] = useState([]);
+  const [newVariant, setNewVariant] = useState({ size: '', color: '', stock: '', sku: '' });
   const [loading, setLoading] = useState(false);
   const [currency, setCurrency] = useState('USD');
   const [imageFile, setImageFile] = useState(null);
@@ -43,7 +46,7 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await API.get('/categories');
+        const response = await API.get('/categories/all');
         setCategories(response.data);
       } catch (error) {
         console.error('Error fetching categories:', error);
@@ -56,13 +59,56 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
   useEffect(() => {
     if (product?.product_Id) {
       fetchProductImages();
+      fetchVariants();
     } else {
       setProductImages([]);
+      setVariants([]);
     }
     if (!product) {
       setCreatedProduct(null);
     }
   }, [product]);
+
+  const fetchVariants = async () => {
+    const productId = activeProduct?.product_Id;
+    if (!productId) return;
+    try {
+      const response = await API.get(`/products/${productId}/variants`);
+      setVariants(response.data);
+    } catch (error) {
+      console.error('Error fetching variants:', error);
+    }
+  };
+
+  const handleAddVariant = async (e) => {
+    e.preventDefault();
+    if (!activeProduct?.product_Id) return;
+    try {
+      await API.post(`/products/${activeProduct.product_Id}/variants`, {
+        productVariant_Size: newVariant.size || null,
+        productVariant_Color: newVariant.color || null,
+        productVariant_Stock: parseInt(newVariant.stock, 10) || 0,
+        productVariant_SKU: newVariant.sku || null,
+        productVariant_IsActive: true
+      });
+      setNewVariant({ size: '', color: '', stock: '', sku: '' });
+      fetchVariants();
+      addToast('Variant added', 'success');
+    } catch (error) {
+      addToast('Failed to add variant', 'error');
+    }
+  };
+
+  const handleDeleteVariant = async (variantId) => {
+    if (!window.confirm('Delete this variant?')) return;
+    try {
+      await API.delete(`/products/variants/${variantId}`);
+      fetchVariants();
+      addToast('Variant deleted', 'success');
+    } catch (error) {
+      addToast('Failed to delete variant', 'error');
+    }
+  };
 
   const fetchProductImages = async () => {
     const productId = activeProduct?.product_Id;
@@ -92,7 +138,8 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
         product_ShippingFee: product.product_ShippingFee || '',
         product_DiscountPercent: product.product_DiscountPercent ?? '',
         product_CompareAtPriceUSD: product.product_CompareAtPriceUSD ?? '',
-        product_CompareAtPriceLBP: product.product_CompareAtPriceLBP ?? ''
+        product_CompareAtPriceLBP: product.product_CompareAtPriceLBP ?? '',
+        product_LowStockThreshold: product.product_LowStockThreshold ?? 5
       });
       if (product.product_PriceUSD && product.product_PriceUSD > 0) setCurrency('USD');
       else if (product.product_PriceLBP && product.product_PriceLBP > 0) setCurrency('LBP');
@@ -112,7 +159,8 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
         product_ShippingFee: '',
         product_DiscountPercent: '',
         product_CompareAtPriceUSD: '',
-        product_CompareAtPriceLBP: ''
+        product_CompareAtPriceLBP: '',
+        product_LowStockThreshold: '5'
       });
       setCurrency('USD');
       setImageFile(null);
@@ -256,7 +304,10 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
       product_ShippingFee: formData.product_ShippingFee ? parseFloat(formData.product_ShippingFee) : null,
       product_DiscountPercent: formData.product_DiscountPercent !== ''
         ? Math.min(100, Math.max(0, parseFloat(formData.product_DiscountPercent)))
-        : null
+        : null,
+      product_LowStockThreshold: formData.product_LowStockThreshold !== ''
+        ? parseInt(formData.product_LowStockThreshold, 10)
+        : 5
     };
     if (activeProduct) submitData.product_Id = activeProduct.product_Id;
 
@@ -324,7 +375,9 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
             <select name="product_CategoryId" value={formData.product_CategoryId} onChange={handleChange}>
               <option value="">-- Select Category --</option>
               {categories.map(cat => (
-                <option key={cat.category_Id} value={cat.category_Id}>{cat.category_Name}</option>
+                <option key={cat.category_Id} value={cat.category_Id}>
+                  {cat.category_ParentId ? `  ↳ ${cat.category_Name}` : cat.category_Name}
+                </option>
               ))}
             </select>
           </div>
@@ -424,10 +477,38 @@ function ProductFormModal({ product, onSave, onClose, onRefresh }) {
               <input type="number" name="product_Stock" value={formData.product_Stock} onChange={handleChange} />
             </div>
             <div className="form-group">
+              <label>Low Stock Alert At</label>
+              <input type="number" name="product_LowStockThreshold" value={formData.product_LowStockThreshold} onChange={handleChange} min="1" />
+            </div>
+            <div className="form-group">
               <label>SKU (Optional)</label>
               <input type="text" name="product_SKU" value={formData.product_SKU} onChange={handleChange} />
             </div>
           </div>
+
+          {activeProduct?.product_Id && (
+            <div className="form-group variants-section">
+              <label>Product Variants (Size / Color)</label>
+              {variants.length > 0 && (
+                <ul className="variants-list">
+                  {variants.map(v => (
+                    <li key={v.productVariant_Id}>
+                      {[v.productVariant_Size, v.productVariant_Color].filter(Boolean).join(' / ') || 'Variant'}
+                      {' — Stock: '}{v.productVariant_Stock}
+                      <button type="button" className="delete-img" onClick={() => handleDeleteVariant(v.productVariant_Id)}>🗑️</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="variant-add-row">
+                <input placeholder="Size" value={newVariant.size} onChange={(e) => setNewVariant({ ...newVariant, size: e.target.value })} />
+                <input placeholder="Color" value={newVariant.color} onChange={(e) => setNewVariant({ ...newVariant, color: e.target.value })} />
+                <input type="number" placeholder="Stock" value={newVariant.stock} onChange={(e) => setNewVariant({ ...newVariant, stock: e.target.value })} />
+                <input placeholder="SKU" value={newVariant.sku} onChange={(e) => setNewVariant({ ...newVariant, sku: e.target.value })} />
+                <button type="button" onClick={handleAddVariant}>+ Add</button>
+              </div>
+            </div>
+          )}
 
           <div className="form-group">
             <label>Shipping Fee</label>

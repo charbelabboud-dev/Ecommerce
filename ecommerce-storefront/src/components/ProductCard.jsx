@@ -10,7 +10,8 @@ import {
   hasDiscount,
   formatProductPrice,
   formatStrikethroughPrice,
-  shouldShowStrikethrough
+  shouldShowStrikethrough,
+  isLowStock
 } from '../utils/pricing';
 import './ProductCard.css';
 
@@ -74,7 +75,7 @@ function ProductCard({ product }) {
   const imageUrl = mainImage ? getImageUrl(mainImage.productImage_ImageUrl) : null;
   const imageCount = images.length;
 
-  const isLowStock = product.product_Stock <= 5 && product.product_Stock > 0;
+  const lowStock = isLowStock(product);
   const isOutOfStock = product.product_Stock === 0;
   const categoryName = product.category?.category_Name;
 
@@ -122,7 +123,7 @@ function ProductCard({ product }) {
         )}
 
         <div className="product-card-badges">
-          {isLowStock && (
+          {lowStock && (
             <span className="low-stock-badge">Only {product.product_Stock} left</span>
           )}
           {isOutOfStock && (

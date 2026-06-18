@@ -68,7 +68,9 @@ public class OrdersController : ControllerBase
                     OrderItem_UnitPriceUSD = item.OrderItem_UnitPriceUSD,
                     OrderItem_UnitPriceLBP = item.OrderItem_UnitPriceLBP,
                     OrderItem_TotalPriceUSD = item.OrderItem_TotalPriceUSD,
-                    OrderItem_TotalPriceLBP = item.OrderItem_TotalPriceLBP
+                    OrderItem_TotalPriceLBP = item.OrderItem_TotalPriceLBP,
+                    OrderItem_VariantId = item.OrderItem_VariantId,
+                    OrderItem_VariantDetails = item.OrderItem_VariantDetails
                 }).ToList()
             };
 
@@ -86,16 +88,49 @@ public class OrdersController : ControllerBase
                 CalculateOrderTotals(order);
             }
 
+            order.Order_CouponCode = string.IsNullOrWhiteSpace(dto.Order_CouponCode)
+                ? null
+                : dto.Order_CouponCode.Trim().ToUpperInvariant();
+            var couponDiscount = await ApplyCouponAsync(order.Order_CouponCode, dto.Order_Currency, order);
+            if (couponDiscount.HasValue)
+            {
+                if (dto.Order_Currency == "USD")
+                {
+                    order.Order_CouponDiscountUSD = couponDiscount;
+                    order.Order_TotalAmountUSD = Math.Max(0, (order.Order_TotalAmountUSD ?? 0) - couponDiscount.Value);
+                }
+                else
+                {
+                    order.Order_CouponDiscountLBP = couponDiscount;
+                    order.Order_TotalAmountLBP = Math.Max(0, (order.Order_TotalAmountLBP ?? 0) - couponDiscount.Value);
+                }
+            }
+
             foreach (var item in order.OrderItems)
             {
-                int rowsAffected = await _context.Database.ExecuteSqlRawAsync(
-                    "UPDATE Products SET Product_Stock = Product_Stock - {0}, Product_UpdatedAt = {1} WHERE Product_Id = {2} AND Product_Stock >= {0}",
-                    item.OrderItem_Quantity, DateTime.UtcNow, item.OrderItem_ProductId);
-
-                if (rowsAffected == 0)
+                if (item.OrderItem_VariantId.HasValue)
                 {
-                    await transaction.RollbackAsync();
-                    return BadRequest(new { message = $"Insufficient stock for product ID {item.OrderItem_ProductId}." });
+                    var variantRows = await _context.Database.ExecuteSqlRawAsync(
+                        "UPDATE \"ProductVariants\" SET \"ProductVariant_Stock\" = \"ProductVariant_Stock\" - {0} WHERE \"ProductVariant_Id\" = {1} AND \"ProductVariant_Stock\" >= {0}",
+                        item.OrderItem_Quantity, item.OrderItem_VariantId.Value);
+
+                    if (variantRows == 0)
+                    {
+                        await transaction.RollbackAsync();
+                        return BadRequest(new { message = $"Insufficient stock for variant ID {item.OrderItem_VariantId}." });
+                    }
+                }
+                else
+                {
+                    int rowsAffected = await _context.Database.ExecuteSqlRawAsync(
+                        "UPDATE \"Products\" SET \"Product_Stock\" = \"Product_Stock\" - {0}, \"Product_UpdatedAt\" = {1} WHERE \"Product_Id\" = {2} AND \"Product_Stock\" >= {0}",
+                        item.OrderItem_Quantity, DateTime.UtcNow, item.OrderItem_ProductId);
+
+                    if (rowsAffected == 0)
+                    {
+                        await transaction.RollbackAsync();
+                        return BadRequest(new { message = $"Insufficient stock for product ID {item.OrderItem_ProductId}." });
+                    }
                 }
             }
 
@@ -206,6 +241,161 @@ public class OrdersController : ControllerBase
 
         return Ok(new { message = $"Order {order.Order_Number} status updated to {status}", order });
     }
+
+    [Authorize(Roles = "Customer")]
+    [HttpPut("{id}/cancel")]
+    public async Task<IActionResult> CancelOrder(int id)
+    {
+        var customerIdClaim = User.FindFirst("CustomerId");
+        if (customerIdClaim == null)
+            return Unauthorized(new { message = "Please login." });
+
+        var customerId = int.Parse(customerIdClaim.Value);
+
+        var order = await _context.Orders
+            .Include(o => o.OrderItems)
+            .FirstOrDefaultAsync(o => o.Order_Id == id && o.Order_CustomerId == customerId);
+
+        if (order == null)
+            return NotFound(new { message = "Order not found." });
+
+        if (order.Order_Status != "Pending")
+            return BadRequest(new { message = "Only pending orders can be cancelled." });
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            foreach (var item in order.OrderItems)
+            {
+                if (item.OrderItem_VariantId.HasValue)
+                {
+                    await _context.Database.ExecuteSqlRawAsync(
+                        "UPDATE \"ProductVariants\" SET \"ProductVariant_Stock\" = \"ProductVariant_Stock\" + {0} WHERE \"ProductVariant_Id\" = {1}",
+                        item.OrderItem_Quantity, item.OrderItem_VariantId.Value);
+                }
+                else
+                {
+                    await _context.Database.ExecuteSqlRawAsync(
+                        "UPDATE \"Products\" SET \"Product_Stock\" = \"Product_Stock\" + {0}, \"Product_UpdatedAt\" = {1} WHERE \"Product_Id\" = {2}",
+                        item.OrderItem_Quantity, DateTime.UtcNow, item.OrderItem_ProductId);
+                }
+            }
+
+            order.Order_Status = "Cancelled";
+            order.Order_UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Ok(new { message = $"Order {order.Order_Number} has been cancelled.", order });
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            return StatusCode(500, new { message = "Failed to cancel order." });
+        }
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("sales-stats")]
+    public async Task<ActionResult<object>> GetSalesStats(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromQuery] string groupBy = "day")
+    {
+        var start = from ?? DateTime.UtcNow.AddDays(-30);
+        var end = to ?? DateTime.UtcNow;
+
+        var orders = await _context.Orders
+            .Where(o => o.Order_CreatedAt >= start && o.Order_CreatedAt <= end && o.Order_Status != "Cancelled")
+            .ToListAsync();
+
+        IEnumerable<object> grouped;
+        if (groupBy == "week")
+        {
+            grouped = orders
+                .GroupBy(o => new { Year = o.Order_CreatedAt.Year, Week = System.Globalization.ISOWeek.GetWeekOfYear(o.Order_CreatedAt) })
+                .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Week)
+                .Select(g => new
+                {
+                    label = $"W{g.Key.Week} {g.Key.Year}",
+                    orderCount = g.Count(),
+                    salesUSD = g.Sum(o => o.Order_TotalAmountUSD ?? 0),
+                    salesLBP = g.Sum(o => o.Order_TotalAmountLBP ?? 0)
+                });
+        }
+        else
+        {
+            grouped = orders
+                .GroupBy(o => o.Order_CreatedAt.Date)
+                .OrderBy(g => g.Key)
+                .Select(g => new
+                {
+                    label = g.Key.ToString("yyyy-MM-dd"),
+                    orderCount = g.Count(),
+                    salesUSD = g.Sum(o => o.Order_TotalAmountUSD ?? 0),
+                    salesLBP = g.Sum(o => o.Order_TotalAmountLBP ?? 0)
+                });
+        }
+
+        return Ok(new
+        {
+            from = start,
+            to = end,
+            totalOrders = orders.Count,
+            totalSalesUSD = orders.Sum(o => o.Order_TotalAmountUSD ?? 0),
+            totalSalesLBP = orders.Sum(o => o.Order_TotalAmountLBP ?? 0),
+            dataPoints = grouped
+        });
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("export/csv")]
+    public async Task<IActionResult> ExportOrdersCsv()
+    {
+        var orders = await _context.Orders
+            .Include(o => o.OrderItems)
+            .OrderByDescending(o => o.Order_CreatedAt)
+            .ToListAsync();
+
+        var sb = new StringBuilder();
+        sb.AppendLine("OrderNumber,Date,Customer,Phone,Status,Currency,SubtotalUSD,SubtotalLBP,ShippingUSD,ShippingLBP,DiscountUSD,DiscountLBP,TotalUSD,TotalLBP,Items");
+
+        foreach (var o in orders)
+        {
+            var items = string.Join("; ", o.OrderItems.Select(i => $"{i.OrderItem_ProductName} x{i.OrderItem_Quantity}"));
+            sb.AppendLine($"\"{o.Order_Number}\",{o.Order_CreatedAt:yyyy-MM-dd},\"{EscapeCsv(o.Order_CustomerName)}\",\"{EscapeCsv(o.Order_CustomerPhone)}\",{o.Order_Status},{o.Order_Currency},{o.Order_SubtotalUSD},{o.Order_SubtotalLBP},{o.Order_ShippingFeeUSD},{o.Order_ShippingFeeLBP},{o.Order_CouponDiscountUSD},{o.Order_CouponDiscountLBP},{o.Order_TotalAmountUSD},{o.Order_TotalAmountLBP},\"{EscapeCsv(items)}\"");
+        }
+
+        return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", $"orders-{DateTime.UtcNow:yyyyMMdd}.csv");
+    }
+
+    private async Task<decimal?> ApplyCouponAsync(string? code, string currency, Order order)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return null;
+
+        var coupon = await _context.Coupons.FirstOrDefaultAsync(c => c.Coupon_Code == code.Trim().ToUpperInvariant());
+        if (coupon == null || !coupon.Coupon_IsActive) return null;
+        if (coupon.Coupon_ExpiresAt.HasValue && coupon.Coupon_ExpiresAt < DateTime.UtcNow) return null;
+        if (coupon.Coupon_UsageLimit.HasValue && coupon.Coupon_UsedCount >= coupon.Coupon_UsageLimit) return null;
+
+        var subtotal = currency == "USD" ? (order.Order_SubtotalUSD ?? 0) : (order.Order_SubtotalLBP ?? 0);
+
+        if (currency == "USD" && coupon.Coupon_MinOrderAmountUSD.HasValue && subtotal < coupon.Coupon_MinOrderAmountUSD) return null;
+        if (currency == "LBP" && coupon.Coupon_MinOrderAmountLBP.HasValue && subtotal < coupon.Coupon_MinOrderAmountLBP) return null;
+
+        decimal discount = 0;
+        if (coupon.Coupon_DiscountPercent.HasValue)
+            discount = subtotal * (coupon.Coupon_DiscountPercent.Value / 100m);
+        else if (currency == "USD" && coupon.Coupon_DiscountAmountUSD.HasValue)
+            discount = coupon.Coupon_DiscountAmountUSD.Value;
+        else if (currency == "LBP" && coupon.Coupon_DiscountAmountLBP.HasValue)
+            discount = coupon.Coupon_DiscountAmountLBP.Value;
+
+        coupon.Coupon_UsedCount++;
+        return Math.Min(discount, subtotal);
+    }
+
+    private static string EscapeCsv(string? value) => (value ?? "").Replace("\"", "\"\"");
 
     private async Task<string> GenerateOrderNumberAsync()
     {

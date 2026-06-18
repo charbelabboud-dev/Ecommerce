@@ -20,6 +20,8 @@ public class CreateOrderItemDto
     public decimal? OrderItem_UnitPriceLBP { get; set; }
     public decimal? OrderItem_TotalPriceUSD { get; set; }
     public decimal? OrderItem_TotalPriceLBP { get; set; }
+    public int? OrderItem_VariantId { get; set; }
+    public string? OrderItem_VariantDetails { get; set; }
 }
 
 public class CreateOrderDto
@@ -49,6 +51,9 @@ public class CreateOrderDto
 
     [StringLength(500)]
     public string? Order_Notes { get; set; }
+
+    [StringLength(50)]
+    public string? Order_CouponCode { get; set; }
 
     [Required, MinLength(1)]
     public List<CreateOrderItemDto> OrderItems { get; set; } = new();

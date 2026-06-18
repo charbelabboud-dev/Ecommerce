@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCustomerOrders } from '../services/OrderApi';
+import API from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import './OrderHistory.css';
 
@@ -24,9 +24,24 @@ function OrderHistory() {
 
   const fetchOrders = async () => {
     setLoading(true);
-    const data = await getCustomerOrders();
-    setOrders(data);
+    try {
+      const response = await API.get('/orders/customer');
+      setOrders(response.data);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    }
     setLoading(false);
+  };
+
+  const handleCancelOrder = async (orderId, orderNumber) => {
+    if (!window.confirm(`Cancel order ${orderNumber}?`)) return;
+    try {
+      await API.put(`/orders/${orderId}/cancel`);
+      addToast('Order cancelled successfully', 'success');
+      fetchOrders();
+    } catch (error) {
+      addToast(error.response?.data?.message || 'Failed to cancel order', 'error');
+    }
   };
 
   const getStatusClass = (status) => {
@@ -99,6 +114,14 @@ function OrderHistory() {
                   >
                     {selectedOrder === order ? 'Hide Details' : 'View Details'}
                   </button>
+                  {order.order_Status === 'Pending' && (
+                    <button
+                      className="cancel-order-btn"
+                      onClick={() => handleCancelOrder(order.order_Id, order.order_Number)}
+                    >
+                      Cancel Order
+                    </button>
+                  )}
                 </div>
                 
                 {selectedOrder === order && (

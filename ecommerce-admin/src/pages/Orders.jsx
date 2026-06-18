@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import API from '../services/api';
+import API, { downloadCsv } from '../services/api';
 import { useToast } from '../contexts/ToastContexts';
 import OrderDetailModal from '../components/OrderDetailModal';
 import './Orders.css';
@@ -83,6 +83,15 @@ function Orders({admin}) {
     navigate('/');
   };
 
+  const handleExport = async () => {
+    try {
+      await downloadCsv('/orders/export/csv', `orders-${new Date().toISOString().slice(0, 10)}.csv`);
+      addToast('Orders exported', 'success');
+    } catch (error) {
+      addToast('Export failed', 'error');
+    }
+  };
+
   const getStatusClass = (status) => {
     switch (status) {
       case 'Pending': return 'status-pending';
@@ -114,6 +123,7 @@ function Orders({admin}) {
           </button>
           <h1>Manage Orders</h1>
         </div>
+        <button className="export-button" onClick={handleExport}>Export CSV</button>
       </div>
 
       <div className="filter-bar">

@@ -22,7 +22,10 @@ function LowStockAlert() {
       const products = response.data;
       
       // Low stock: 1 to 5 items
-      const lowStock = products.filter(p => p.product_Stock > 0 && p.product_Stock <= 5);
+      const lowStock = products.filter(p => {
+        const threshold = p.product_LowStockThreshold > 0 ? p.product_LowStockThreshold : 5;
+        return p.product_Stock > 0 && p.product_Stock <= threshold;
+      });
       // Out of stock: 0 items
       const outOfStock = products.filter(p => p.product_Stock === 0);
       

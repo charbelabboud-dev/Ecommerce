@@ -100,6 +100,16 @@ export function formatOriginalProductPrice(product) {
   return formatStrikethroughPrice(product);
 }
 
+export function getLowStockThreshold(product) {
+  return product?.product_LowStockThreshold > 0 ? product.product_LowStockThreshold : 5;
+}
+
+export function isLowStock(product) {
+  if (!product) return false;
+  const threshold = getLowStockThreshold(product);
+  return product.product_Stock > 0 && product.product_Stock <= threshold;
+}
+
 export function formatWhatsAppNumber(phone) {
   if (!phone) return null;
   let digits = phone.replace(/\D/g, '');

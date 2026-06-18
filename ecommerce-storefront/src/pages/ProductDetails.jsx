@@ -31,7 +31,7 @@ function ProductDetail() {
   const [submittingReview, setSubmittingReview] = useState(false);
   
   const [isInWishlist, setIsInWishlist] = useState(false);
-  
+  const [selectedVariant, setSelectedVariant] = useState(null);
   const [reviewForm, setReviewForm] = useState({
     review_CustomerName: '',
     review_CustomerEmail: '',
@@ -46,6 +46,7 @@ function ProductDetail() {
     setLoading(true);
     setActiveTab('description');
     setQuantity(1);
+    setSelectedVariant(null);
     fetchProduct();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
@@ -154,7 +155,12 @@ function ProductDetail() {
       navigate('/login');
       return;
     }
-    addToCart(product, quantity);
+    const variants = product.productVariants || [];
+    if (variants.length > 0 && !selectedVariant) {
+      addToast('Please select a size or color option', 'error');
+      return;
+    }
+    addToCart(product, quantity, selectedVariant);
     addToast(`${product.product_Name} added to cart!`, 'success');
   };
 
@@ -162,12 +168,21 @@ function ProductDetail() {
     let val = parseInt(e.target.value);
     if (isNaN(val)) val = 1;
     if (val < 1) val = 1;
-    if (product?.product_Stock && val > product.product_Stock) val = product.product_Stock;
+    const maxStock = selectedVariant
+      ? selectedVariant.productVariant_Stock
+      : (product?.product_Stock || 999);
+    if (maxStock && val > maxStock) val = maxStock;
     setQuantity(val);
   };
 
-  const isLowStock = product?.product_Stock <= 5 && product?.product_Stock > 0;
-  const isOutOfStock = product?.product_Stock === 0;
+  const variants = product?.productVariants || [];
+  const hasVariants = variants.length > 0;
+  const availableStock = hasVariants
+    ? (selectedVariant?.productVariant_Stock ?? 0)
+    : (product?.product_Stock ?? 0);
+  const threshold = product?.product_LowStockThreshold > 0 ? product.product_LowStockThreshold : 5;
+  const isLowStock = availableStock > 0 && availableStock <= threshold;
+  const isOutOfStock = availableStock === 0;
   const discount = product ? Math.round(getEffectiveDiscountPercent(product) || 0) : 0;
   const onSale = product ? hasDiscount(product) : false;
 
@@ -244,7 +259,7 @@ function ProductDetail() {
 
             {isLowStock && (
               <div className="stock-alert low-stock">
-                ⚠️ Only {product.product_Stock} items left in stock! Order soon.
+                ⚠️ Only {availableStock} items left in stock! Order soon.
               </div>
             )}
             {isOutOfStock && (
@@ -276,6 +291,31 @@ function ProductDetail() {
     </span>
   </div>
 
+            {hasVariants && (
+              <div className="variant-selector">
+                <label className="meta-label">Select option *</label>
+                <div className="variant-options">
+                  {variants.map((v) => {
+                    const label = [v.productVariant_Size, v.productVariant_Color].filter(Boolean).join(' / ') || `Variant #${v.productVariant_Id}`;
+                    return (
+                      <button
+                        key={v.productVariant_Id}
+                        type="button"
+                        className={`variant-option ${selectedVariant?.productVariant_Id === v.productVariant_Id ? 'active' : ''} ${v.productVariant_Stock === 0 ? 'disabled' : ''}`}
+                        disabled={v.productVariant_Stock === 0}
+                        onClick={() => {
+                          setSelectedVariant(v);
+                          setQuantity(1);
+                        }}
+                      >
+                        {label} {v.productVariant_Stock === 0 ? '(Out)' : `(${v.productVariant_Stock})`}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="product-detail-actions">
               <div className="quantity-section">
                 <div className="quantity-selector">
@@ -291,7 +331,7 @@ function ProductDetail() {
                     value={quantity}
                     onChange={handleQuantityChange}
                     min="1"
-                    max={product.product_Stock || 999}
+                    max={availableStock || 999}
                   />
                   <button 
                     className="qty-btn"

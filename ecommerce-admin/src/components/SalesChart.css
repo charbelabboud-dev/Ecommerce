@@ -1,0 +1,80 @@
+.sales-chart-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.sales-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.sales-chart-header h3 {
+  margin: 0;
+}
+
+.sales-chart-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sales-chart-controls select {
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+}
+
+.sales-chart-summary {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.sales-chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 180px;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.sales-bar-col {
+  flex: 1;
+  min-width: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.sales-bar {
+  width: 100%;
+  max-width: 40px;
+  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+  border-radius: 4px 4px 0 0;
+  margin-top: auto;
+  min-height: 4px;
+}
+
+.sales-bar-label {
+  font-size: 0.65rem;
+  color: #64748b;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+.sales-chart-loading,
+.sales-chart-empty {
+  color: #64748b;
+  text-align: center;
+  padding: 2rem 0;
+}

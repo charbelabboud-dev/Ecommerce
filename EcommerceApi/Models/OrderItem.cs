@@ -14,6 +14,8 @@ public class OrderItem
     public decimal? OrderItem_UnitPriceLBP { get; set; }
     public decimal? OrderItem_TotalPriceUSD { get; set; }
     public decimal? OrderItem_TotalPriceLBP { get; set; }
+    public int? OrderItem_VariantId { get; set; }
+    public string? OrderItem_VariantDetails { get; set; }
 
     public virtual Order? Order { get; set; }
     public virtual Product? Product { get; set; }

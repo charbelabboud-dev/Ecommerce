@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import API, { getImageUrl } from '../services/api';
+import API, { getImageUrl, downloadCsv } from '../services/api';
 import { useToast } from '../contexts/ToastContexts';
 import ProductFormModal from '../components/ProductFormModal';
 import './Products.css';
@@ -16,7 +16,8 @@ function Products() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkDiscount, setBulkDiscount] = useState('');
   // Track if error already shown to prevent duplicate toasts
   const errorShown = useRef(false);
 
@@ -134,6 +135,46 @@ const handleDelete = async (id, productName) => {
     }
   };
 
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredProducts.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredProducts.map(p => p.product_Id));
+    }
+  };
+
+  const handleBulkAction = async (action) => {
+    if (selectedIds.length === 0) {
+      addToast('Select at least one product', 'error');
+      return;
+    }
+    try {
+      const payload = { productIds: selectedIds, action };
+      if (action === 'setDiscount') {
+        payload.discountPercent = parseFloat(bulkDiscount);
+      }
+      await API.post('/products/bulk-action', payload);
+      addToast(`${selectedIds.length} product(s) updated`, 'success');
+      setSelectedIds([]);
+      fetchProducts();
+    } catch (error) {
+      addToast(error.response?.data?.message || 'Bulk action failed', 'error');
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      await downloadCsv('/products/export/csv', `products-${new Date().toISOString().slice(0, 10)}.csv`);
+      addToast('Products exported', 'success');
+    } catch (error) {
+      addToast('Export failed', 'error');
+    }
+  };
+
   const goBack = () => {
     navigate('/');
   };
@@ -183,8 +224,19 @@ const handleDelete = async (id, productName) => {
           <button className="add-button" onClick={handleAdd}>
             + Add Product
           </button>
+          <button className="export-button" onClick={handleExport}>Export CSV</button>
         </div>
       </div>
+
+      {selectedIds.length > 0 && (
+        <div className="bulk-actions-bar">
+          <span>{selectedIds.length} selected</span>
+          <button onClick={() => handleBulkAction('activate')}>Activate</button>
+          <button onClick={() => handleBulkAction('deactivate')}>Deactivate</button>
+          <input type="number" placeholder="Discount %" value={bulkDiscount} onChange={(e) => setBulkDiscount(e.target.value)} min="0" max="100" />
+          <button onClick={() => handleBulkAction('setDiscount')}>Set Discount</button>
+        </div>
+      )}
 
       {loading ? (
         <div className="loading">Loading products...</div>
@@ -193,6 +245,7 @@ const handleDelete = async (id, productName) => {
           <table className="products-table">
             <thead>
               <tr>
+                <th><input type="checkbox" checked={filteredProducts.length > 0 && selectedIds.length === filteredProducts.length} onChange={toggleSelectAll} /></th>
                 <th>Image</th>
                 <th>Name</th>
                 <th>Category</th>
@@ -207,7 +260,7 @@ const handleDelete = async (id, productName) => {
             <tbody>
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="no-data">
+                  <td colSpan="10" className="no-data">
                     {products.length === 0 
                       ? 'No products found. Click "Add Product" to create one.' 
                       : `No ${filter !== 'all' ? filter : ''} products match your search.`}
@@ -216,6 +269,7 @@ const handleDelete = async (id, productName) => {
               ) : (
                 filteredProducts.map((product) => (
                   <tr key={product.product_Id}>
+                    <td><input type="checkbox" checked={selectedIds.includes(product.product_Id)} onChange={() => toggleSelect(product.product_Id)} /></td>
                     <td className="product-image-cell">
                       {product.productImages && product.productImages.length > 0 ? (
                         <img 
