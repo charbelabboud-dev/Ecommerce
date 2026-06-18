@@ -14,20 +14,15 @@ import { ConfirmProvider } from './contexts/ConfirmContext';
 
 
 import ApiStatusGate from './components/ApiStatusGate';
+import { clearAdminSession } from './services/authStore';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [admin, setAdmin] = useState(null);
 
-  // Check if user was previously logged in
+  // Session is memory-only: refresh requires login again. Clear any legacy localStorage tokens.
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const savedAdmin = localStorage.getItem('admin');
-    
-    if (token && savedAdmin) {
-      setIsAuthenticated(true);
-      setAdmin(JSON.parse(savedAdmin));
-    }
+    clearAdminSession();
   }, []);
 
   const handleLogin = (adminData) => {
@@ -36,10 +31,13 @@ function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('admin');
+    clearAdminSession();
     setIsAuthenticated(false);
     setAdmin(null);
+  };
+
+  const handleAdminUpdate = (updates) => {
+    setAdmin((prev) => (prev ? { ...prev, ...updates } : prev));
   };
 
   // Protected Route wrapper
@@ -56,7 +54,9 @@ function App() {
       <ApiStatusGate>
       <Router>
         <Routes>
-          <Route path="/login" element={<Login onLogin={handleLogin} />} />
+          <Route path="/login" element={
+            isAuthenticated ? <Navigate to="/" replace /> : <Login onLogin={handleLogin} />
+          } />
           
           <Route path="/" element={
             <ProtectedRoute>
@@ -92,7 +92,7 @@ function App() {
 
 <Route path="/settings" element={
   <ProtectedRoute>
-    <Settings />
+    <Settings onAdminUpdate={handleAdminUpdate} />
   </ProtectedRoute>
 } />
 <Route path="/coupons" element={

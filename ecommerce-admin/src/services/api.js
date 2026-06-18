@@ -3,6 +3,8 @@ import axios from "axios";
 
 // this is an axios library to create http and https requests
 //(Base URL: is the base of every request.) and headers is used to tell the server the type of the request(in this case json)
+import { clearAdminSession, getAuthToken } from './authStore';
+
 export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5147';
 
 export const getImageUrl = (path) => {
@@ -30,7 +32,7 @@ const isRetryableError = (error) => {
 //interCeptors runs before every request ! checks if a token exists in the browsers storage , if yes adds authorization : Bearer in front of it ! 
 API.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
+        const token = getAuthToken();
         if(token){
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -52,10 +54,9 @@ API.interceptors.response.use(
         }
 
         if (error.response?.status === 401) {
-            const hadToken = localStorage.getItem('token');
+            const hadToken = getAuthToken();
             if (hadToken) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('admin');
+                clearAdminSession();
                 if (!window.location.pathname.includes('/login')) {
                     window.location.href = '/login';
                 }

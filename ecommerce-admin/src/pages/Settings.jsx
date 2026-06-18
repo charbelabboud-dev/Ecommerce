@@ -4,7 +4,9 @@ import API from '../services/api';
 import { useToast } from '../contexts/ToastContexts';
 import './Settings.css';
 
-function Settings() {
+import { updateAdmin } from '../services/authStore';
+
+function Settings({ onAdminUpdate }) {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -75,21 +77,16 @@ const handleSubmit = async (e) => {
     console.log("Save response:", response.data); // Debug
     
     addToast('Settings updated successfully!', 'success');
-    
-    // Update local storage with all new data
-    const savedAdmin = localStorage.getItem('admin');
-    if (savedAdmin) {
-      const admin = JSON.parse(savedAdmin);
-      admin.adminUser_StoreName = formData.storeName;
-      admin.adminUser_StorePhone = formData.storePhone;
-      admin.adminUser_StoreAddress = formData.storeAddress;
-      admin.adminUser_Email = formData.email;
-      admin.adminUser_StoreLogo = formData.storeLogo;
-      localStorage.setItem('admin', JSON.stringify(admin));
-    }
-    
-    // Reload to refresh all components
-    window.location.reload();
+
+    const adminUpdates = {
+      adminUser_StoreName: formData.storeName,
+      adminUser_StorePhone: formData.storePhone,
+      adminUser_StoreAddress: formData.storeAddress,
+      adminUser_Email: formData.email,
+      adminUser_StoreLogo: formData.storeLogo,
+    };
+    updateAdmin(adminUpdates);
+    onAdminUpdate?.(adminUpdates);
     
   } catch (error) {
     console.error('Error saving settings:', error);

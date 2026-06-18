@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';  // ← ADD THIS
+import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
+import { setAdminSession } from '../services/authStore';
 import './Login.css';
 
 function Login({ onLogin }) {
@@ -22,10 +23,8 @@ function Login({ onLogin }) {
       });
 
       const { token, admin } = response.data;
-      
-      localStorage.setItem('token', token);
-      localStorage.setItem('admin', JSON.stringify(admin));
-      
+
+      setAdminSession(token, admin);
       onLogin(admin);
       
       // ← ADD THIS: Redirect to dashboard

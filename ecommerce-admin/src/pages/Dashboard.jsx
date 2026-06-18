@@ -4,6 +4,7 @@ import API from '../services/api';
 import { useToast } from '../contexts/ToastContexts';
 import './Dashboard.css';
 import LowStockAlert from '../components/LowStockAlert';
+import { clearAdminSession } from '../services/authStore';
 import SalesChart from '../components/SalesChart';
 
 function Dashboard({ admin, onLogout }) {
@@ -75,8 +76,7 @@ function Dashboard({ admin, onLogout }) {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('admin');
+    clearAdminSession();
     onLogout();
   };
 
