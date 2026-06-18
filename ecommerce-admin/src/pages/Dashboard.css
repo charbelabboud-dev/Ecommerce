@@ -138,6 +138,8 @@
 .nav-button-wrapper {
   position: relative;
   display: inline-block;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .nav-badge {
@@ -463,11 +465,19 @@
   
   .dashboard-nav {
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
+  }
+
+  .nav-button-wrapper {
+    width: fit-content;
+    max-width: 100%;
+    align-self: center;
   }
   
   .nav-button {
     justify-content: center;
+    width: 100%;
+    min-width: 220px;
   }
   
   .header-buttons {
